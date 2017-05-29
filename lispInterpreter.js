@@ -1,5 +1,2 @@
 const plusParser = (input) => input.startsWith('+') ? ['+', input.slice(1)] : null
-
-let input = '+ 1 2'
-let output = plusParser(input)
-console.log(output)
+const spaceParser = (input) => input.match(/^[\s\n]/) ? [null, input.slice(input.match(/\S/).index)] : null
