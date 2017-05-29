@@ -1,12 +1,31 @@
+const spaceParser = input => input.match(/^[\s\n]/) ? [null, input.slice(input.match(/\S/).index)] : null
+const numParser = input => {
+  let regexp = String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)
+  if (!String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)) return null
+  return [parseInt(regexp[0]), input.slice(regexp[0].length)]
+}
+
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
 const minusParser = input => input.startsWith('-') ? [minus, input.slice(1)] : null
 const multiplyParser = input => input.startsWith('*') ? [multiply, input.slice(1)] : null
 const divideParser = input => input.startsWith('/') ? [divide, input.slice(1)] : null
-const spaceParser = input => input.match(/^[\s\n]/) ? [null, input.slice(input.match(/\S/).index)] : null
-const  numParser = input => {
-  let regexp = String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)
-  if (!String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)) return null
-  return [parseInt(regexp[0]), input.slice(regexp[0].length)]
+
+const expressionParser = (input) => {
+  let result = []
+  let output
+  if (!input.startsWith('(')) return null
+  input = input.slice(1)
+  while (true) {
+    output = divideParser(input)
+    result.push(output[0])
+    output = spaceParser(output[1])
+    output = numParser(output[1])
+    result.push(output[0])
+    output = spaceParser(output[1])
+    output = numParser(output[1])
+    result.push(output[0])
+    if (output[1] === ')') return result
+  }
 }
 
 const plus = (a, b) => {
@@ -30,15 +49,8 @@ const divide = (a, b) => {
 }
 
 let result = []
-let input = '/ 10 10'
-let output = divideParser(input)
-result.push(output[0])
-output = spaceParser(output[1])
-output = numParser(output[1])
-result.push(output[0])
-output = spaceParser(output[1])
-output = numParser(output[1])
-result.push(output[0])
-const fun = result.shift()
-output = fun(...result)
+let input = '(/ 10 10)'
+let output = expressionParser(input)
+const fun = output.shift()
+output = fun(...output)
 console.log(output)
