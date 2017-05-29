@@ -4,6 +4,7 @@ const numParser = input => {
   if (!String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)) return null
   return [parseInt(regexp[0]), input.slice(regexp[0].length)]
 }
+const boolParser = input => input.startsWith('true') ? [true, input.slice(4)] : (input.startsWith('false') ? [false, input.slice(5)] : null)
 const identifierParser = input => input.match(/\w+/) ? [input.match(/\w+/)[0], input.slice(input.match(/\s+/).index)] : null
 
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -16,6 +17,7 @@ const gteParser = input => input.startsWith('>=') ? [gtEqTo, input.slice(2)] : n
 const lteParser = input => input.startsWith('<=') ? [ltEqTo, input.slice(2)] : null
 const etParser = input => input.startsWith('==') ? [eqTo, input.slice(2)] : null
 const defParser = input => input.startsWith('define') ? [def, input.slice(6)] : null
+const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : null
 
 const expressionParser = (input) => {
   let result = []
@@ -27,7 +29,10 @@ const expressionParser = (input) => {
     if (output === null) return null
     result.push(output[0])
     output = spaceParser(output[1])
-    output = identifierParser(output[1])
+    output = boolParser(output[1])
+    result.push(output[0])
+    output = spaceParser(output[1])
+    output = numParser(output[1])
     result.push(output[0])
     output = spaceParser(output[1])
     output = numParser(output[1])
@@ -39,7 +44,7 @@ const expressionParser = (input) => {
 const operatorParser = (input) => {
   let result
   result = plusParser(input) || minusParser(input) || multiplyParser(input) || divideParser(input) || gteParser(input) || lteParser(input) ||
-  etParser(input) || gtParser(input) || ltParser(input) || defParser(input) || identifierParser(input)
+  etParser(input) || gtParser(input) || ltParser(input) || defParser(input) || ifParser(input) || identifierParser(input)
   return result
 }
 
@@ -87,8 +92,16 @@ const def = (a, b) => {
   return a = b
 }
 
+const ifFun = (a, b, c) => {
+  if (a) {
+    return b
+  } else {
+    return c
+  }
+}
+
 let result = []
-let input = '(define abc 10)'
+let input = '(if false 10 30)'
 let output = expressionParser(input)
 if (output === null) {
   output = 'error'
