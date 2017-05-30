@@ -18,6 +18,10 @@ const lteParser = input => input.startsWith('<=') ? [ltEqTo, input.slice(2)] : n
 const etParser = input => input.startsWith('==') ? [eqTo, input.slice(2)] : null
 const defParser = input => input.startsWith('define') ? [def, input.slice(6)] : null
 const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : null
+const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
+const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
+const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
+const beginParser = input => input.startsWith('begin') ? [begFun, input.slice(5)] : null
 
 const expressionParser = (input) => {
   let result = []
@@ -48,56 +52,22 @@ const operatorParser = (input) => {
   return result
 }
 
-const plus = (a, b) => {
-  return a + b
-}
+const plus = (a, b) => a + b
+const minus = (a, b) => a - b
+const multiply = (a, b) => a * b
+const divide = (a, b) => (b === 0) ? 'Can not divide by zero' : a / b
+const greaterThan = (a, b) => a > b
+const lessThan = (a, b) => a < b
+const gtEqTo = (a, b) => a >= b
+const ltEqTo = (a, b) => a <= b
+const eqTo = (a, b) => a === b
+const def = (a, b) => a = b
+const ifFun = (a, b, c) => a ? b : c
+const maxFun = (a, b) => a > b ? a : b
+const minFun = (a, b) => a < b ? a : b
+const notFun = a => !a
+const begFun = (a) => {
 
-const minus = (a, b) => {
-  return a - b
-}
-
-const multiply = (a, b) => {
-  return a * b
-}
-
-const divide = (a, b) => {
-  if (b === 0) {
-    return 'Can not divide by zero'
-  } else {
-    return a / b
-  }
-}
-
-const greaterThan = (a, b) => {
-  return a > b
-}
-
-const lessThan = (a, b) => {
-  return a < b
-}
-
-const gtEqTo = (a, b) => {
-  return a >= b
-}
-
-const ltEqTo = (a, b) => {
-  return a <= b
-}
-
-const eqTo = (a, b) => {
-  return a === b
-}
-
-const def = (a, b) => {
-  return a = b
-}
-
-const ifFun = (a, b, c) => {
-  if (a) {
-    return b
-  } else {
-    return c
-  }
 }
 
 let result = []
