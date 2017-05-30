@@ -1,3 +1,5 @@
+const ENV = {}
+
 const spaceParser = input => {
   let match = input.match(/^[\s\n]+/)
   if (match === null) return null
@@ -44,14 +46,12 @@ const expressionParser = (input) => {
     if (output === null) return null
     result.push(output[0])
     output = spaceParser(output[1])
-    output = boolParser(output[1])
+    output = identifierParser(output[1])
     result.push(output[0])
     output = spaceParser(output[1])
     output = numParser(output[1])
     result.push(output[0])
-    output = spaceParser(output[1])
-    output = numParser(output[1])
-    result.push(output[0])
+    console.log(result)
     if (output[1] === ')') return result
   }
 }
@@ -73,7 +73,7 @@ const lessThan = (a, b) => a < b
 const gtEqTo = (a, b) => a >= b
 const ltEqTo = (a, b) => a <= b
 const eqTo = (a, b) => a === b
-const def = (a, b) => a = b
+const def = (a, b) => { ENV.a = b }
 const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
@@ -83,7 +83,7 @@ const begFun = (a) => {
 }
 
 let result = []
-let input = '(if false 10 30)'
+let input = '(define a 30)'
 let output = expressionParser(input)
 if (output === null) {
   output = 'error'
