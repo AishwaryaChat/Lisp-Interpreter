@@ -1,6 +1,8 @@
 const ENV = {}
 
+// Tokenizers
 const spaceParser = input => {
+  console.log('spaceParser', input)
   let match = input.match(/^[\s\n]+/)
   if (match === null) return null
   let spaceLt = match[0].length
@@ -12,14 +14,13 @@ const numParser = input => {
   let numStr = match[0]
   return [parseInt(numStr), input.slice(numStr.length)]
 }
-const boolParser = input => input.startsWith('true') ? [true, input.slice(4)] : (input.startsWith('false') ? [false, input.slice(5)] : null)
+// const boolParser = input => input.startsWith('true') ? [true, input.slice(4)] : (input.startsWith('false') ? [false, input.slice(5)] : null)
 const identifierParser = input => {
-  let match = input.match(/\w+/)
+  let match = input.match(/^[a-zA-Z]+/)
   if (match === null) return null
   let idStr = match[0]
   return [idStr, input.slice(idStr.length)]
 }
-
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
 const minusParser = input => input.startsWith('-') ? [minus, input.slice(1)] : null
 const multiplyParser = input => input.startsWith('*') ? [multiply, input.slice(1)] : null
@@ -34,7 +35,7 @@ const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : nul
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
-const beginParser = input => input.startsWith('begin') ? [begFun, input.slice(5)] : null
+// const beginParser = input => input.startsWith('begin') ? [begFun, input.slice(5)] : null
 
 const expressionParser = (input) => {
   let result = []
@@ -43,27 +44,42 @@ const expressionParser = (input) => {
   input = input.slice(1)
   while (true) {
     output = operatorParser(input)
-    if (output === null) return null
-    result.push(output[0])
+    if (output === null) break
+    result.push(output[0])    // let input = '(define a (+ 1 2))'
     output = spaceParser(output[1])
-    output = identifierParser(output[1])
-    result.push(output[0])
-    output = spaceParser(output[1])
-    output = numParser(output[1])
-    result.push(output[0])
-    console.log(result)
-    if (output[1] === ')') return result
+    if (output === null) break
+    while (!output[1].startsWith(')')) {
+      console.log(output)
+      console.log(result)
+      output = valueParser(output[1])
+      result.push(output[0])
+      let tempOutput = spaceParser(output[1])
+      if (tempOutput !== null) {
+        output = tempOutput
+      }
+    }
+    console.log('result ', result)
+    return result
   }
+  return 'null'
 }
 
 const operatorParser = (input) => {
   let result
   result = plusParser(input) || minusParser(input) || multiplyParser(input) || divideParser(input) || gteParser(input) || lteParser(input) ||
-  etParser(input) || gtParser(input) || ltParser(input) || defParser(input) || ifParser(input) || identifierParser(input) ||
+  etParser(input) || gtParser(input) || ltParser(input) || defParser(input) || ifParser(input) ||
   maxParser(input) || minParser(input) || notParser(input)
   return result
 }
 
+const valueParser = (input) => {
+  let result
+  result = expressionParser(input) || identifierParser(input) || numParser(input)
+  console.log('valueParser', result)
+  return result
+}
+
+// Lisp Functions
 const plus = (a, b) => a + b
 const minus = (a, b) => a - b
 const multiply = (a, b) => a * b
@@ -78,17 +94,19 @@ const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
 const notFun = a => !a
-const begFun = (a) => {
+// const begFun = (a) => {
+//
+// }
 
-}
-
-let result = []
-let input = '(define a 30)'
-let output = expressionParser(input)
-if (output === null) {
-  output = 'error'
+let input = '(define a 1)'
+let output = valueParser(input)
+console.log('main',output)
+if (output === 'null' || output === null) {
+  output = 'Invalid expression'
 } else {
   const fun = output.shift()
   output = fun(...output)
 }
+
 console.log(output)
+console.log(ENV)
