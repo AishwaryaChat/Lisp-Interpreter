@@ -1,11 +1,22 @@
-const spaceParser = input => input.match(/^[\s\n]/) ? [null, input.slice(input.match(/\S/).index)] : null
+const spaceParser = input => {
+  let match = input.match(/^[\s\n]+/)
+  if (match === null) return null
+  let spaceLt = match[0].length
+  return [null, input.slice(spaceLt)]
+}
 const numParser = input => {
-  let regexp = String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)
-  if (!String(input).match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)) return null
-  return [parseInt(regexp[0]), input.slice(regexp[0].length)]
+  let match = input.match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)
+  if (match === null) return null
+  let numStr = match[0]
+  return [parseInt(numStr), input.slice(numStr.length)]
 }
 const boolParser = input => input.startsWith('true') ? [true, input.slice(4)] : (input.startsWith('false') ? [false, input.slice(5)] : null)
-const identifierParser = input => input.match(/\w+/) ? [input.match(/\w+/)[0], input.slice(input.match(/\s+/).index)] : null
+const identifierParser = input => {
+  let match = input.match(/\w+/)
+  if (match === null) return null
+  let idStr = match[0]
+  return [idStr, input.slice(idStr.length)]
+}
 
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
 const minusParser = input => input.startsWith('-') ? [minus, input.slice(1)] : null
@@ -48,7 +59,8 @@ const expressionParser = (input) => {
 const operatorParser = (input) => {
   let result
   result = plusParser(input) || minusParser(input) || multiplyParser(input) || divideParser(input) || gteParser(input) || lteParser(input) ||
-  etParser(input) || gtParser(input) || ltParser(input) || defParser(input) || ifParser(input) || identifierParser(input)
+  etParser(input) || gtParser(input) || ltParser(input) || defParser(input) || ifParser(input) || identifierParser(input) ||
+  maxParser(input) || minParser(input) || notParser(input)
   return result
 }
 
