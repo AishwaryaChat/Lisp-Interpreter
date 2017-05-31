@@ -28,11 +28,20 @@ const statementParser = (input) => {
     while (true) {
       if (input.startsWith('print')) {
         input = input.slice(6)
-        output = identifierParser(input) || numParser(input)
-        console.log(output[0])
+        output = identifierParser(input)
+        if (output !== null) {
+          let val = ENV[output[0]]
+          if (val === undefined) {
+            console.log('Error ', output[0], ' is not defined')
+            break
+          } else {
+            console.log(val)
+          }
+        } else {
+          output = numParser(input)
+          console.log(output[0])
+        }
         input = output[1]
-        if (!input.startsWith(')')) return null
-        input = input.slice(1)
       } else if (input.startsWith('define')) {
         let result = []
         input = input.slice(7)
@@ -43,8 +52,11 @@ const statementParser = (input) => {
         output = numParser(output[1])
         result.push(output[0])
         defFun(...result)
+        input = output[1]
       } else break
     }
+    if (!input.startsWith(')')) return null
+    input = input.slice(1)
     if (input !== '') {
       output = spaceParser(input)
       if (output !== null) {
@@ -57,7 +69,5 @@ const statementParser = (input) => {
 
 const defFun = (a, b) => { ENV[a] = b }
 
-let input = `(print b)(print 100)
-(print a)(print 24)(print k)(define a 10)`
+let input = `(define a 10)(print 20)(print b)`
 let output = statementParser(input)
-console.log(ENV)
