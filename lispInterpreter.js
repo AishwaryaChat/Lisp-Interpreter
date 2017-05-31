@@ -1,3 +1,5 @@
+const ENV = {}
+
 const spaceParser = input => {
   let match = input.match(/^[\s\n]+/)
   if (match === null) return null
@@ -20,35 +22,42 @@ const identifierParser = input => {
 }
 
 const statementParser = (input) => {
-  let output
-  while (true) {
-    if (input.startsWith('(')) {
-      input = input.slice(1)
+  if (input.startsWith('(')) {
+    let output = ''
+    input = input.slice(1)
+    while (true) {
       if (input.startsWith('print')) {
         input = input.slice(6)
-        output = numParser(input) || identifierParser(input)
+        output = identifierParser(input) || numParser(input)
         console.log(output[0])
         input = output[1]
-        if (!output[1].startsWith(')')) return null
+        if (!input.startsWith(')')) return null
         input = input.slice(1)
-        if (input !== null) {
-          output = spaceParser(input)
-          if (output !== null) {
-            input = output[1]
-          }
-        }
-        if (input === '') break
-      }
+      } else if (input.startsWith('define')) {
+        let result = []
+        input = input.slice(7)
+        output = identifierParser(input)
+        result.push(output[0])
+        input = output[1]
+        output = spaceParser(input)
+        output = numParser(output[1])
+        result.push(output[0])
+        defFun(...result)
+      } else break
+    }
+    if (input !== '') {
+      output = spaceParser(input)
+      if (output !== null) {
+        input = output[1]
+        output = statementParser(input)
+      } else statementParser(input)
     }
   }
 }
 
-const printFun = () => {
+const defFun = (a, b) => { ENV[a] = b }
 
-}
-
-let input = `(print 10)
-(print a)(print 9)
-(print 50)
-(print b)(print 20)`
+let input = `(print b)(print 100)
+(print a)(print 24)(print k)(define a 10)`
 let output = statementParser(input)
+console.log(ENV)
