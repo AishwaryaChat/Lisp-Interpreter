@@ -1,3 +1,4 @@
+const fs = require('fs')
 const ENV = {}
 
 const spaceParser = input => {
@@ -69,5 +70,5 @@ const statementParser = (input) => {
 
 const defFun = (a, b) => { ENV[a] = b }
 
-let input = `(define a 10)(print 20)(print b)`
+let input = fs.readFileSync('test.txt').toString()
 let output = statementParser(input)
