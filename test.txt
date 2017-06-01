@@ -1,1 +1,1 @@
-(define a 42)
+(print 10)
