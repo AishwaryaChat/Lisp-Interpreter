@@ -33,6 +33,15 @@ const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : 
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
 
+const parserFactory = (...parsers) => input => {
+  for (let parser of parsers) {
+    let output = parser(input)
+    if (output !== null) return output
+  }
+}
+
+const operatorParser = parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, defParser, ifParser, maxParser, minParser, notParser)
+
 const spaceParser = input => {
   let match = input.match(/^[\s\n]+/)
   if (match === null) return null
@@ -53,6 +62,8 @@ const identifierParser = input => {
   let idStr = match[0]
   return [idStr, input.slice(idStr.length)]
 }
+
+const expressionParser = parserFactory(numParser, operatorParser)
 
 const statementParser = (input) => {
   let output = ''
@@ -91,24 +102,13 @@ const statementParser = (input) => {
   return null
 }
 
-const expressionParser = (input) => {
-  let parsers = [plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, defParser, ifParser, maxParser, minParser, notParser]
-}
-
-const parserFactory = (parsers, input) => {
-  for (let parser of parsers) {
-    let output = parser(input)
-    if (output !== null) return output
-  }
-}
-
 const programParser = (input) => {
-  let parsers = [statementParser, expressionParser]
   while (true) {
     if (input.startsWith('(')) {
       input = input.slice(1)
       let output = ''
-      output = parserFactory(parsers, input)
+      output = statementParser(input)
+      output = output(input)
       input = output
       if (output === null) return null
       if (output !== '') {
@@ -122,10 +122,8 @@ const programParser = (input) => {
   }
 }
 
-
-
 const defFun = (a, b) => { ENV[a] = b }
 
 let input = fs.readFileSync('test.txt').toString()
-let output = programParser(input)
-console.log(output)
+// let output = programParser(input)
+// console.log(output)

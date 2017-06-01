@@ -1,3 +1,1 @@
-(print 10)(define a 91)
-(print a)
-(define b 21)(print b)
+(define b (+ 21 21))(print b)
