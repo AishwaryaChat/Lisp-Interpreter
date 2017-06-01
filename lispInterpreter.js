@@ -11,7 +11,7 @@ const lessThan = (a, b) => a < b
 const gtEqTo = (a, b) => a >= b
 const ltEqTo = (a, b) => a <= b
 const eqTo = (a, b) => a === b
-const def = (a, b) => { ENV.a = b }
+const defFun = (a, b) => { ENV[a] = b }
 const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
@@ -27,7 +27,6 @@ const ltParser = input => input.startsWith('<') ? [lessThan, input.slice(1)] : n
 const gteParser = input => input.startsWith('>=') ? [gtEqTo, input.slice(2)] : null
 const lteParser = input => input.startsWith('<=') ? [ltEqTo, input.slice(2)] : null
 const etParser = input => input.startsWith('==') ? [eqTo, input.slice(2)] : null
-const defParser = input => input.startsWith('define') ? [def, input.slice(6)] : null
 const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : null
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
@@ -40,10 +39,10 @@ const parserFactory = (...parsers) => input => {
   }
 }
 
-const operatorParser = parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, defParser, ifParser, maxParser, minParser, notParser)
+const operatorParser = parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser)
 
 const spaceParser = input => {
-  let match = input.match(/^[\s\n]+/)
+  let match = input.match(/^[\s\n]/)
   if (match === null) return null
   let spaceLt = match[0].length
   return [null, input.slice(spaceLt)]
@@ -52,8 +51,9 @@ const spaceParser = input => {
 const numParser = input => {
   let match = input.match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)
   if (match === null) return null
+  let flag = true
   let numStr = match[0]
-  return [parseInt(numStr), input.slice(numStr.length)]
+  return [parseInt(numStr), input.slice(numStr.length), flag]
 }
 
 const identifierParser = input => {
@@ -108,10 +108,8 @@ const programParser = (input) => {
       input = input.slice(1)
       let output = ''
       output = statementParser(input)
-      output = output(input)
       input = output
-      if (output === null) return null
-      if (output !== '') {
+      if (input !== '') {
         output = spaceParser(input)
         if (output !== null) {
           input = output[1]
@@ -122,8 +120,6 @@ const programParser = (input) => {
   }
 }
 
-const defFun = (a, b) => { ENV[a] = b }
-
 let input = fs.readFileSync('test.txt').toString()
-// let output = programParser(input)
-// console.log(output)
+let output = programParser(input)
+console.log(output)
