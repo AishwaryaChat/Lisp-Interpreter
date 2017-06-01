@@ -1,6 +1,38 @@
 const fs = require('fs')
 const ENV = {}
 
+// Lisp Functions
+const plus = (a, b) => a + b
+const minus = (a, b) => a - b
+const multiply = (a, b) => a * b
+const divide = (a, b) => (b === 0) ? 'Can not divide by zero' : a / b
+const greaterThan = (a, b) => a > b
+const lessThan = (a, b) => a < b
+const gtEqTo = (a, b) => a >= b
+const ltEqTo = (a, b) => a <= b
+const eqTo = (a, b) => a === b
+const def = (a, b) => { ENV.a = b }
+const ifFun = (a, b, c) => a ? b : c
+const maxFun = (a, b) => a > b ? a : b
+const minFun = (a, b) => a < b ? a : b
+const notFun = a => !a
+
+// Tokenizers
+const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
+const minusParser = input => input.startsWith('-') ? [minus, input.slice(1)] : null
+const multiplyParser = input => input.startsWith('*') ? [multiply, input.slice(1)] : null
+const divideParser = input => input.startsWith('/') ? [divide, input.slice(1)] : null
+const gtParser = input => input.startsWith('>') ? [greaterThan, input.slice(1)] : null
+const ltParser = input => input.startsWith('<') ? [lessThan, input.slice(1)] : null
+const gteParser = input => input.startsWith('>=') ? [gtEqTo, input.slice(2)] : null
+const lteParser = input => input.startsWith('<=') ? [ltEqTo, input.slice(2)] : null
+const etParser = input => input.startsWith('==') ? [eqTo, input.slice(2)] : null
+const defParser = input => input.startsWith('define') ? [def, input.slice(6)] : null
+const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : null
+const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
+const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
+const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
+
 const spaceParser = input => {
   let match = input.match(/^[\s\n]+/)
   if (match === null) return null
@@ -59,14 +91,27 @@ const statementParser = (input) => {
   return null
 }
 
+const expressionParser = (input) => {
+  let parsers = [plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, defParser, ifParser, maxParser, minParser, notParser]
+}
+
+const parserFactory = (parsers, input) => {
+  for (let parser of parsers) {
+    let output = parser(input)
+    if (output !== null) return output
+  }
+}
+
 const programParser = (input) => {
+  let parsers = [statementParser, expressionParser]
   while (true) {
     if (input.startsWith('(')) {
       input = input.slice(1)
       let output = ''
-      output = statementParser(input)
+      output = parserFactory(parsers, input)
       input = output
-      if (input !== '') {
+      if (output === null) return null
+      if (output !== '') {
         output = spaceParser(input)
         if (output !== null) {
           input = output[1]
@@ -76,6 +121,8 @@ const programParser = (input) => {
     } else return null
   }
 }
+
+
 
 const defFun = (a, b) => { ENV[a] = b }
 
