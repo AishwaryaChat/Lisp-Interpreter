@@ -42,7 +42,7 @@ const parserFactory = (...parsers) => input => {
   return null
 }
 
-const operatorParser = parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser)
+const operatorParser = input => parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser)(input)
 
 const spaceParser = input => {
   let match = input.match(/^[\s\n]/)
@@ -52,7 +52,6 @@ const spaceParser = input => {
 }
 
 const numParser = input => {
-  console.log('inside numParser')
   let match = input.match(/^[-+]?(\d+(\.\d*)?|\.\d+)([e][+-]?\d+)?/)
   if (match === null) return null
   let numStr = match[0]
@@ -70,19 +69,54 @@ const identifierParser = input => {
   throw new Error(`${idStr} is not defined`)
 }
 
-const expressionParser = parserFactory(numParser, operatorParser, identifierParser)
+const expressionParser = (input) => {
+  if (input.startsWith('(')) {
+    input = input.slice(1)
+    return parserFactory(numParser, operatorParser, identifierParser)(input)
+  } else return parserFactory(numParser, identifierParser)(input)
+}
 
 const statementParser = (input) => {
   let output = ''
-  if (input.startsWith('print')) {
-    input = input.slice(6)
-    output = expressionParser(input)
-    if (output !== null) {
-      console.log(output[0])
+  let tempResult = []
+  let result = []
+  while (true) {
+    if (input.startsWith('print')) {
+      input = input.slice(6)
+      while (!input.startsWith(')')) {
+        output = expressionParser(input)
+        if (output !== null) {
+          input = output[1]
+          tempResult.push(output[0])
+          output = spaceParser(input)
+          if (output !== null) {
+            input = output[1]
+          }
+        }
+      }
+      input = input.slice(1)
+      if (input !== '') {
+        output = spaceParser(input)
+        if (output !== null) {
+          input = output[1]
+        }
+      }
+      while (true) {
+        let val = tempResult.pop()
+        if (typeof val === 'function') {
+          let res = val(...result)
+          result = []
+          tempResult.push(res)
+          if (tempResult.length === 1) break
+        } else {
+          result.push(val)
+        }
+      }
+      console.log(tempResult[0])
+      if (input === '') return 'completed'
+      if (!input.startsWith(')')) return null
+      return input.slice(1)
     }
-    input = output[1]
-    if (!input.startsWith(')')) return null
-    return input.slice(1)
   }
 }
 
@@ -93,10 +127,13 @@ const programParser = (input) => {
       let output = ''
       output = statementParser(input)
       input = output
-      if (input !== '') {
-        output = spaceParser(input)
-        if (output !== null) {
-          input = output[1]
+      if (input === 'completed') return input
+      else {
+        if (input !== '') {
+          output = spaceParser(input)
+          if (output !== null) {
+            input = output[1]
+          }
         }
       }
       if (input === '') return 'completed'
