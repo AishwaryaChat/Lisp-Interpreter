@@ -41,7 +41,59 @@ const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : nul
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
-const functionParser = input => input.startsWith('lambda') ? [lambdaFun, input.slice(6)] : null
+
+const expressionParser = (input) => {
+  if (input.startsWith('(')) {
+    input = input.slice(1)
+    return parserFactory(numParser, operatorParser, identifierParser)(input)
+  } else return parserFactory(numParser, identifierParser)(input)
+}
+
+const operatorParser = input => parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, functionParser)(input)
+
+const functionParser = input => {
+  let output = ''
+  let args = []
+  if (input.startsWith('lambda')) {
+    input = input.slice(7)
+    if (!input.startsWith('(')) throw new Error('arguments must be in side brackets ()')
+    input = input.slice(1)
+    while (!input.startsWith(')')) {
+      output = identifierParser(input, true)
+      args.push(output[0])
+      input = output[1]
+      output = spaceParser(input)
+      if (output !== null) {
+        input = output[1]
+      } else break
+    }
+    if (input.startsWith(')')) {
+      input = input.slice(1)
+    } else throw new Error('arguments must ends with )')
+    output = spaceParser(input)
+    input = output[1]
+    if (!input.startsWith('(')) throw new Error('body must be in side brackets ()')
+    input = input.slice(1)
+    let body = '('
+    let i = 1
+    let j = 0
+    let k = 0
+    while (i !== j) {
+      if (input[k] === '(') i++
+      if (input[k] === ')') j++
+      body = body + input[k]
+      k++
+    }
+    input = input.substring(k)
+    let obj = {
+      type: 'lambda',
+      arguments: args,
+      body: body,
+      env: {}
+    }
+    return [obj, input]
+  }
+}
 
 const parserFactory = (...parsers) => input => {
   for (let parser of parsers) {
@@ -50,8 +102,6 @@ const parserFactory = (...parsers) => input => {
   }
   return null
 }
-
-const operatorParser = input => parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, functionParser)(input)
 
 const spaceParser = input => {
   let match = input.match(/^[\s\n]/)
@@ -77,13 +127,6 @@ const identifierParser = (input, flag) => {
     return [num, input.slice(idStr.length)]
   }
   throw new Error(`${idStr} is not defined`)
-}
-
-const expressionParser = (input) => {
-  if (input.startsWith('(')) {
-    input = input.slice(1)
-    return parserFactory(numParser, operatorParser, identifierParser)(input)
-  } else return parserFactory(numParser, identifierParser)(input)
 }
 
 const statementParser = (input) => {
@@ -139,7 +182,6 @@ const statementParser = (input) => {
       return input
     }
   } else if (input.startsWith('define')) {
-    let iden = ''
     input = input.slice(7)
     output = identifierParser(input, true)
     if (output !== null) {
