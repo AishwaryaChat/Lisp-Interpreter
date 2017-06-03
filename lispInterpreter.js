@@ -58,11 +58,12 @@ const numParser = input => {
   return [parseInt(numStr), input.slice(numStr.length)]
 }
 
-const identifierParser = input => {
+const identifierParser = (input, flag) => {
   let match = input.match(/^[a-zA-Z]+/)
   if (match === null) return null
   let idStr = match[0]
   let num = ENV[idStr]
+  if (flag === true) return [idStr, input.slice(idStr.length)]
   if (num !== undefined) {
     return [num, input.slice(idStr.length)]
   }
@@ -113,7 +114,7 @@ const statementParser = (input) => {
         while (true) {
           let val = tempResult.pop()
           if (typeof val === 'function') {
-            let res = val(...result)
+            let res = val(...result.reverse())
             result = []
             tempResult.push(res)
             if (tempResult.length === 1) break
@@ -127,6 +128,62 @@ const statementParser = (input) => {
         return 'completed'
       } else {
         return input
+      }
+    } else if (input.startsWith('define')) {
+      let iden = ''
+      input = input.slice(7)
+      output = identifierParser(input, true)
+      if (output !== null) {
+        iden = output[0]
+        input = output[1]
+        output = spaceParser(input)
+        input = output[1]
+        while (!input.startsWith(')')) {
+          output = expressionParser(input)
+          if (output !== null) {
+            tempResult.push(output[0])
+            input = output[1]
+            output = spaceParser(input)
+            if (output !== null) {
+              input = output[1]
+            }
+          }
+        }
+        while (input.startsWith(')')) {
+          input = input.slice(1)
+        }
+        if (input !== '') {
+          output = spaceParser(input)
+          if (output !== null) {
+            input = output[1]
+          }
+        }
+        if (tempResult.length === 1) {
+          ENV[iden] = tempResult[0]
+          if (input === '') {
+            return 'completed'
+          } else {
+            return input
+          }
+        } else {
+          while (true) {
+            let val = tempResult.pop()
+            if (typeof val === 'function') {
+              let res = val(...result.reverse())
+              result = []
+              tempResult.push(res)
+              if (tempResult.length === 1) break
+            } else {
+              result.push(val)
+            }
+          }
+        }
+        ENV[iden] = tempResult[0]
+        if (input === '') {
+          return 'completed'
+        } else {
+          return input
+        }
       }
     }
 }
@@ -154,3 +211,4 @@ const programParser = (input) => {
 let input = fs.readFileSync('test.txt').toString()
 let output = programParser(input)
 console.log(output)
+console.log(ENV)
