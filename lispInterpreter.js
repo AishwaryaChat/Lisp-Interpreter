@@ -13,7 +13,7 @@ const lessThan = (a, b) => a < b
 const gtEqTo = (a, b) => a >= b
 const ltEqTo = (a, b) => a <= b
 const eqTo = (a, b) => a === b
-const defFun = (a, b) => { ENV[a] = b }
+// const defFun = (a, b) => { ENV[a] = b }
 const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
@@ -80,44 +80,55 @@ const statementParser = (input) => {
   let output = ''
   let tempResult = []
   let result = []
-  while (true) {
     if (input.startsWith('print')) {
       input = input.slice(6)
       while (!input.startsWith(')')) {
         output = expressionParser(input)
         if (output !== null) {
-          input = output[1]
           tempResult.push(output[0])
+          input = output[1]
           output = spaceParser(input)
           if (output !== null) {
             input = output[1]
           }
         }
       }
-      input = input.slice(1)
+      while (input.startsWith(')')) {
+        input = input.slice(1)
+      }
       if (input !== '') {
         output = spaceParser(input)
         if (output !== null) {
           input = output[1]
         }
       }
-      while (true) {
-        let val = tempResult.pop()
-        if (typeof val === 'function') {
-          let res = val(...result)
-          result = []
-          tempResult.push(res)
-          if (tempResult.length === 1) break
+      if (tempResult.length === 1) {
+        console.log(tempResult[0])
+        if (input === '') {
+          return 'completed'
         } else {
-          result.push(val)
+          return input
+        }
+      } else {
+        while (true) {
+          let val = tempResult.pop()
+          if (typeof val === 'function') {
+            let res = val(...result)
+            result = []
+            tempResult.push(res)
+            if (tempResult.length === 1) break
+          } else {
+            result.push(val)
+          }
         }
       }
       console.log(tempResult[0])
-      if (input === '') return 'completed'
-      if (!input.startsWith(')')) return null
-      return input.slice(1)
+      if (input === '') {
+        return 'completed'
+      } else {
+        return input
+      }
     }
-  }
 }
 
 const programParser = (input) => {
@@ -126,17 +137,16 @@ const programParser = (input) => {
       input = input.slice(1)
       let output = ''
       output = statementParser(input)
+      if (output === 'completed') {
+        return 'completed'
+      }
       input = output
-      if (input === 'completed') return input
-      else {
-        if (input !== '') {
-          output = spaceParser(input)
-          if (output !== null) {
-            input = output[1]
-          }
+      if (input !== '') {
+        output = spaceParser(input)
+        if (output !== null) {
+          input = output[1]
         }
       }
-      if (input === '') return 'completed'
     } else return null
   }
 }
