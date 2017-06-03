@@ -18,6 +18,14 @@ const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
 const notFun = a => !a
+const lambdaFun = (a, b) => {
+  return {
+    type: 'lambda',
+    args: [a],
+    body: b,
+    env: {}
+  }
+}
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -33,6 +41,7 @@ const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : nul
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
+const functionParser = input => input.startsWith('lambda') ? [lambdaFun, input.slice(6)] : null
 
 const parserFactory = (...parsers) => input => {
   for (let parser of parsers) {
@@ -42,7 +51,7 @@ const parserFactory = (...parsers) => input => {
   return null
 }
 
-const operatorParser = input => parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser)(input)
+const operatorParser = input => parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, functionParser)(input)
 
 const spaceParser = input => {
   let match = input.match(/^[\s\n]/)
@@ -81,8 +90,63 @@ const statementParser = (input) => {
   let output = ''
   let tempResult = []
   let result = []
-    if (input.startsWith('print')) {
-      input = input.slice(6)
+  if (input.startsWith('print')) {
+    input = input.slice(6)
+    while (!input.startsWith(')')) {
+      output = expressionParser(input)
+      if (output !== null) {
+        tempResult.push(output[0])
+        input = output[1]
+        output = spaceParser(input)
+        if (output !== null) {
+          input = output[1]
+        }
+      }
+    }
+    while (input.startsWith(')')) {
+      input = input.slice(1)
+    }
+    if (input !== '') {
+      output = spaceParser(input)
+      if (output !== null) {
+        input = output[1]
+      }
+    }
+    if (tempResult.length === 1) {
+      console.log(tempResult[0])
+      if (input === '') {
+        return 'completed'
+      } else {
+        return input
+      }
+    } else {
+      while (true) {
+        let val = tempResult.pop()
+        if (typeof val === 'function') {
+          let res = val(...result.reverse())
+          result = []
+          tempResult.push(res)
+          if (tempResult.length === 1) break
+        } else {
+          result.push(val)
+        }
+      }
+    }
+    console.log(tempResult[0])
+    if (input === '') {
+      return 'completed'
+    } else {
+      return input
+    }
+  } else if (input.startsWith('define')) {
+    let iden = ''
+    input = input.slice(7)
+    output = identifierParser(input, true)
+    if (output !== null) {
+      iden = output[0]
+      input = output[1]
+      output = spaceParser(input)
+      input = output[1]
       while (!input.startsWith(')')) {
         output = expressionParser(input)
         if (output !== null) {
@@ -104,7 +168,7 @@ const statementParser = (input) => {
         }
       }
       if (tempResult.length === 1) {
-        console.log(tempResult[0])
+        ENV[iden] = tempResult[0]
         if (input === '') {
           return 'completed'
         } else {
@@ -123,69 +187,14 @@ const statementParser = (input) => {
           }
         }
       }
-      console.log(tempResult[0])
+      ENV[iden] = tempResult[0]
       if (input === '') {
         return 'completed'
       } else {
         return input
       }
-    } else if (input.startsWith('define')) {
-      let iden = ''
-      input = input.slice(7)
-      output = identifierParser(input, true)
-      if (output !== null) {
-        iden = output[0]
-        input = output[1]
-        output = spaceParser(input)
-        input = output[1]
-        while (!input.startsWith(')')) {
-          output = expressionParser(input)
-          if (output !== null) {
-            tempResult.push(output[0])
-            input = output[1]
-            output = spaceParser(input)
-            if (output !== null) {
-              input = output[1]
-            }
-          }
-        }
-        while (input.startsWith(')')) {
-          input = input.slice(1)
-        }
-        if (input !== '') {
-          output = spaceParser(input)
-          if (output !== null) {
-            input = output[1]
-          }
-        }
-        if (tempResult.length === 1) {
-          ENV[iden] = tempResult[0]
-          if (input === '') {
-            return 'completed'
-          } else {
-            return input
-          }
-        } else {
-          while (true) {
-            let val = tempResult.pop()
-            if (typeof val === 'function') {
-              let res = val(...result.reverse())
-              result = []
-              tempResult.push(res)
-              if (tempResult.length === 1) break
-            } else {
-              result.push(val)
-            }
-          }
-        }
-        ENV[iden] = tempResult[0]
-        if (input === '') {
-          return 'completed'
-        } else {
-          return input
-        }
-      }
     }
+  }
 }
 
 const programParser = (input) => {
