@@ -7,3 +7,4 @@
 (print (300))(print 10)
 (print (* 40 50))(print (500))
 (define square (lambda (x) (* x x)))
+(print square a)

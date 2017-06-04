@@ -18,14 +18,6 @@ const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
 const notFun = a => !a
-const lambdaFun = (a, b) => {
-  return {
-    type: 'lambda',
-    args: [a],
-    body: b,
-    env: {}
-  }
-}
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -87,7 +79,7 @@ const functionParser = input => {
     input = input.substring(k)
     let obj = {
       type: 'lambda',
-      arguments: args,
+      args: args,
       body: body,
       env: {}
     }
@@ -124,6 +116,81 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
+const lambdaParser = (input, val) => {
+  let output = ''
+  let tempResult = []
+  let result = []
+  output = spaceParser(input)
+  if (output !== null) {
+    input = output[1]
+  } else throw new Error('space is required')
+  let obj = ENV[val]
+  let {args, body, env} = obj
+  args = args[0]
+  let lambdaInput = body
+  output = identifierParser(input) || numParser(input)
+  if (output !== null) {
+    input = output[1]
+    let arg = output[0]
+    if (typeof arg === 'number') {
+      env[args] = arg
+    } else if (typeof arg === 'string') {
+      if (ENV[arg] !== undefined) {
+        env[args] = ENV[arg]
+      } else throw new Error(`${arg} is undefined`)
+    }
+    let tempVal = ''
+    while (!lambdaInput.startsWith(')')) {
+      output = expressionParser(lambdaInput)
+      if (output !== null) {
+        lambdaInput = output[1]
+        tempVal = output[0]
+        if (typeof tempVal === 'number') tempResult.push(tempVal)
+        else if (typeof tempVal === 'string') {
+          if (env[tempVal] !== undefined) {
+            tempVal = env[tempVal]
+          } else if (ENV[tempVal] !== undefined) {
+            tempVal = ENV[tempVal]
+          } else throw new Error(`${tempVal} is undefined`)
+          tempResult.push(tempVal)
+        } else {
+          tempResult.push(tempVal)
+        }
+      }
+      lambdaInput = output[1]
+      output = spaceParser(lambdaInput)
+      if (output !== null) {
+        lambdaInput = output[1]
+      }
+    }
+  }
+  while (lambdaInput.startsWith(')')) {
+    lambdaInput = lambdaInput.slice(1)
+  }
+  if (input !== '') {
+    output = spaceParser(input)
+    if (output !== null) {
+      input = output[1]
+    }
+  }
+  if (tempResult.length === 1) {
+    return [tempResult, input]
+  } else {
+    while (true) {
+      let someval = tempResult.pop()
+      if (typeof someval === 'function') {
+        let res = someval(...result.reverse())
+        result = []
+        tempResult.push(res)
+        if (tempResult.length === 1) break
+      } else {
+        result.push(someval)
+      }
+    }
+    return [tempResult, input]
+  }
+}
+
 const statementParser = (input) => {
   let output = ''
   let tempResult = []
@@ -141,12 +208,15 @@ const statementParser = (input) => {
         } else if (typeof val === 'string') {
           let idVal = ENV[val]
           if (idVal !== undefined) {
-            tempResult.push(idVal)
+            if (typeof idVal === 'object') {
+              output = lambdaParser(input, val)
+              val = output[0][0]
+              input = output[1]
+            }
+            tempResult.push(val)
           } else {
             throw new Error(`${val} is not defined`)
           }
-        } else if (typeof val === 'object') {
-
         } else {
           tempResult.push(val)
         }
