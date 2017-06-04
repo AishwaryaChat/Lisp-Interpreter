@@ -117,16 +117,11 @@ const numParser = input => {
   return [parseInt(numStr), input.slice(numStr.length)]
 }
 
-const identifierParser = (input, flag) => {
+const identifierParser = (input) => {
   let match = input.match(/^[a-zA-Z]+/)
   if (match === null) return null
   let idStr = match[0]
-  let num = ENV[idStr]
-  if (flag === true) return [idStr, input.slice(idStr.length)]
-  if (num !== undefined) {
-    return [num, input.slice(idStr.length)]
-  }
-  throw new Error(`${idStr} is not defined`)
+  return [idStr, input.slice(idStr.length)]
 }
 
 const statementParser = (input) => {
@@ -134,11 +129,27 @@ const statementParser = (input) => {
   let tempResult = []
   let result = []
   if (input.startsWith('print')) {
+    let val = ''
     input = input.slice(6)
     while (!input.startsWith(')')) {
       output = expressionParser(input)
       if (output !== null) {
-        tempResult.push(output[0])
+        val = output[0]
+        input = output[1]
+        if (typeof val === 'number') {
+          tempResult.push(val)
+        } else if (typeof val === 'string') {
+          let idVal = ENV[val]
+          if (idVal !== undefined) {
+            tempResult.push(idVal)
+          } else {
+            throw new Error(`${val} is not defined`)
+          }
+        } else if (typeof val === 'object') {
+
+        } else {
+          tempResult.push(val)
+        }
         input = output[1]
         output = spaceParser(input)
         if (output !== null) {
@@ -183,9 +194,9 @@ const statementParser = (input) => {
     }
   } else if (input.startsWith('define')) {
     input = input.slice(7)
-    output = identifierParser(input, true)
+    output = identifierParser(input)
     if (output !== null) {
-      iden = output[0]
+      let iden = output[0]
       input = output[1]
       output = spaceParser(input)
       input = output[1]
