@@ -114,6 +114,25 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
+const evalFunction = (tempResult, result) => {
+  if (tempResult.length === 1) {
+    return tempResult[0]
+  } else {
+    while (true) {
+      let val = tempResult.pop()
+      if (typeof val === 'function') {
+        let res = val(...result.reverse())
+        result = []
+        tempResult.push(res)
+        if (tempResult.length === 1) break
+      } else {
+        result.push(val)
+      }
+    }
+    return tempResult[0]
+  }
+}
+
 const lambdaParser = (input, val) => {
   let output = ''
   let tempResult = []
@@ -241,23 +260,8 @@ const printParser = (input) => {
       input = output[1]
     }
   }
-  if (tempResult.length === 1) {
-    console.log(tempResult[0])
-    return input
-  } else {
-    while (true) {
-      let val = tempResult.pop()
-      if (typeof val === 'function') {
-        let res = val(...result.reverse())
-        result = []
-        tempResult.push(res)
-        if (tempResult.length === 1) break
-      } else {
-        result.push(val)
-      }
-    }
-  }
-  console.log(tempResult[0])
+  let value = evalFunction(tempResult, result)
+  console.log(value)
   return input
 }
 
