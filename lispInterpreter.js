@@ -31,14 +31,15 @@ const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : 
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
 
-const expressionParser = (input) => {
+const expressionParser = (input) => parserFactory(numParser, identifierParser, operatorParser)(input)
+
+const operatorParser = input => {
   if (input.startsWith('(')) {
     input = input.slice(1)
-    return parserFactory(numParser, operatorParser, identifierParser)(input)
-  } else return parserFactory(numParser, identifierParser)(input)
+    return parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, functionParser)(input)
+  }
+  return null
 }
-
-const operatorParser = input => parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, functionParser)(input)
 
 const functionParser = input => {
   let output = ''
