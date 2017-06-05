@@ -1,7 +1,5 @@
 const fs = require('fs')
-const ENV = {
-  // a: 10
-}
+const ENV = {}
 
 // Lisp Functions
 const plus = (a, b) => a + b
@@ -13,7 +11,6 @@ const lessThan = (a, b) => a < b
 const gtEqTo = (a, b) => a >= b
 const ltEqTo = (a, b) => a <= b
 const eqTo = (a, b) => a === b
-// const defFun = (a, b) => { ENV[a] = b }
 const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
@@ -96,7 +93,6 @@ const parserFactory = (...parsers) => input => {
 }
 
 const spaceParser = input => {
-  // console.log('spaceParser ', input)
   let match = input.match(/^[\s\n]/)
   if (match === null) return null
   let spaceLt = match[0].length
@@ -196,7 +192,9 @@ const printParser = (input) => {
   let val = ''
   let tempResult = []
   let result = []
-  input = input.slice(5)
+  if (input.startsWith('(print')) {
+    input = input.slice(6)
+  } else return null
   output = spaceParser(input)
   if (output !== null) {
     input = output[1]
@@ -259,7 +257,6 @@ const printParser = (input) => {
     }
   }
   console.log(tempResult[0])
-  // console.log('input', input);
   return input
 }
 
@@ -267,7 +264,9 @@ const defineParser = (input) => {
   let output = ''
   let tempResult = []
   let result = []
-  input = input.slice(6)
+  if (input.startsWith('(define')) {
+    input = input.slice(7)
+  } else return null
   output = spaceParser(input)
   if (output !== null) {
     input = output[1]
@@ -320,21 +319,15 @@ const defineParser = (input) => {
 }
 
 const statementParser = (input) => {
-  let output = ''
-  let tempResult = []
-  let result = []
-  while (input.startsWith('(')) {
-    input = input.slice(1)
-    if (input.startsWith('print')) {
-      input = printParser(input)
-    } else if (input.startsWith('define')) {
-      input = defineParser(input)
-    }
+  if (defineParser(input) !== null) {
+    return defineParser(input)
+  } else {
+    return printParser(input)
   }
 }
 
 const programParser = (code) => {
-  while (code !== '' && code !== undefined) {
+  while (code !== '') {
     let output = ''
     output = spaceParser(code)
     if (output !== null) {
