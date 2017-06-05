@@ -195,85 +195,39 @@ const statementParser = (input) => {
   let output = ''
   let tempResult = []
   let result = []
-  if (input.startsWith('print')) {
-    let val = ''
-    input = input.slice(6)
-    while (!input.startsWith(')')) {
-      output = expressionParser(input)
-      if (output !== null) {
-        val = output[0]
-        input = output[1]
-        if (typeof val === 'number') {
-          tempResult.push(val)
-        } else if (typeof val === 'string') {
-          let idVal = ENV[val]
-          if (idVal !== undefined) {
-            if (typeof idVal === 'object') {
-              output = lambdaParser(input, val)
-              val = output[0][0]
-              input = output[1]
-            }
-            tempResult.push(val)
-          } else {
-            throw new Error(`${val} is not defined`)
-          }
-        } else {
-          tempResult.push(val)
-        }
-        input = output[1]
-        output = spaceParser(input)
-        if (output !== null) {
-          input = output[1]
-        }
-      }
-    }
-    while (input.startsWith(')')) {
-      input = input.slice(1)
-    }
-    if (input !== '') {
+  if (input.startsWith('(')) {
+    input = input.slice(1)
+    if (input.startsWith('print')) {
+      let val = ''
+      input = input.slice(5)
       output = spaceParser(input)
       if (output !== null) {
         input = output[1]
-      }
-    }
-    if (tempResult.length === 1) {
-      console.log(tempResult[0])
-      if (input === '') {
-        return 'completed'
-      } else {
-        return input
-      }
-    } else {
-      while (true) {
-        let val = tempResult.pop()
-        if (typeof val === 'function') {
-          let res = val(...result.reverse())
-          result = []
-          tempResult.push(res)
-          if (tempResult.length === 1) break
-        } else {
-          result.push(val)
-        }
-      }
-    }
-    console.log(tempResult[0])
-    if (input === '') {
-      return 'completed'
-    } else {
-      return input
-    }
-  } else if (input.startsWith('define')) {
-    input = input.slice(7)
-    output = identifierParser(input)
-    if (output !== null) {
-      let iden = output[0]
-      input = output[1]
-      output = spaceParser(input)
-      input = output[1]
+      } else throw new Error(`Space is required after statement`)
       while (!input.startsWith(')')) {
         output = expressionParser(input)
         if (output !== null) {
-          tempResult.push(output[0])
+          val = output[0]
+          input = output[1]
+          if (typeof val === 'number') {
+            tempResult.push(val)
+          } else if (typeof val === 'string') {
+            let idVal = ENV[val]
+            if (idVal !== undefined) {
+              if (typeof idVal === 'object') {
+                output = lambdaParser(input, val)
+                val = output[0][0]
+                input = output[1]
+                tempResult.push(val)
+              } else {
+                tempResult.push(idVal)
+              }
+            } else {
+              throw new Error(`${val} is not defined`)
+            }
+          } else {
+            tempResult.push(val)
+          }
           input = output[1]
           output = spaceParser(input)
           if (output !== null) {
@@ -291,7 +245,7 @@ const statementParser = (input) => {
         }
       }
       if (tempResult.length === 1) {
-        ENV[iden] = tempResult[0]
+        console.log(tempResult[0])
         if (input === '') {
           return 'completed'
         } else {
@@ -310,11 +264,66 @@ const statementParser = (input) => {
           }
         }
       }
-      ENV[iden] = tempResult[0]
+      console.log(tempResult[0])
       if (input === '') {
         return 'completed'
       } else {
         return input
+      }
+    } else if (input.startsWith('define')) {
+      input = input.slice(7)
+      output = identifierParser(input)
+      if (output !== null) {
+        let iden = output[0]
+        input = output[1]
+        output = spaceParser(input)
+        input = output[1]
+        while (!input.startsWith(')')) {
+          output = expressionParser(input)
+          if (output !== null) {
+            tempResult.push(output[0])
+            input = output[1]
+            output = spaceParser(input)
+            if (output !== null) {
+              input = output[1]
+            }
+          }
+        }
+        while (input.startsWith(')')) {
+          input = input.slice(1)
+        }
+        if (input !== '') {
+          output = spaceParser(input)
+          if (output !== null) {
+            input = output[1]
+          }
+        }
+        if (tempResult.length === 1) {
+          ENV[iden] = tempResult[0]
+          if (input === '') {
+            return 'completed'
+          } else {
+            return input
+          }
+        } else {
+          while (true) {
+            let val = tempResult.pop()
+            if (typeof val === 'function') {
+              let res = val(...result.reverse())
+              result = []
+              tempResult.push(res)
+              if (tempResult.length === 1) break
+            } else {
+              result.push(val)
+            }
+          }
+        }
+        ENV[iden] = tempResult[0]
+        if (input === '') {
+          return 'completed'
+        } else {
+          return input
+        }
       }
     }
   }
@@ -322,21 +331,22 @@ const statementParser = (input) => {
 
 const programParser = (input) => {
   while (true) {
-    if (input.startsWith('(')) {
-      input = input.slice(1)
-      let output = ''
-      output = statementParser(input)
-      if (output === 'completed') {
-        return 'completed'
+    let output = ''
+    output = spaceParser(input)
+    if (output !== null) {
+      input = output[1]
+    }
+    output = statementParser(input)
+    if (output === 'completed') {
+      return 'completed'
+    }
+    input = output
+    if (input !== '') {
+      output = spaceParser(input)
+      if (output !== null) {
+        input = output[1]
       }
-      input = output
-      if (input !== '') {
-        output = spaceParser(input)
-        if (output !== null) {
-          input = output[1]
-        }
-      }
-    } else return null
+    }
   }
 }
 
