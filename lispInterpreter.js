@@ -96,6 +96,7 @@ const parserFactory = (...parsers) => input => {
 }
 
 const spaceParser = input => {
+  // console.log('spaceParser ', input)
   let match = input.match(/^[\s\n]/)
   if (match === null) return null
   let spaceLt = match[0].length
@@ -190,167 +191,160 @@ const lambdaParser = (input, val) => {
     return [tempResult, input]
   }
 }
-
-const statementParser = (input) => {
+const printParser = (input) => {
   let output = ''
+  let val = ''
   let tempResult = []
   let result = []
-  if (input.startsWith('(')) {
-    input = input.slice(1)
-    if (input.startsWith('print')) {
-      let val = ''
-      input = input.slice(5)
+  input = input.slice(5)
+  output = spaceParser(input)
+  if (output !== null) {
+    input = output[1]
+  } else throw new Error(`Space is required after statement`)
+  while (!input.startsWith(')')) {
+    output = expressionParser(input)
+    if (output !== null) {
+      val = output[0]
+      input = output[1]
+      if (typeof val === 'number') {
+        tempResult.push(val)
+      } else if (typeof val === 'string') {
+        let idVal = ENV[val]
+        if (idVal !== undefined) {
+          if (typeof idVal === 'object') {
+            output = lambdaParser(input, val)
+            val = output[0][0]
+            input = output[1]
+            tempResult.push(val)
+          } else {
+            tempResult.push(idVal)
+          }
+        } else {
+          throw new Error(`${val} is not defined`)
+        }
+      } else {
+        tempResult.push(val)
+      }
+      input = output[1]
       output = spaceParser(input)
       if (output !== null) {
         input = output[1]
-      } else throw new Error(`Space is required after statement`)
-      while (!input.startsWith(')')) {
-        output = expressionParser(input)
-        if (output !== null) {
-          val = output[0]
-          input = output[1]
-          if (typeof val === 'number') {
-            tempResult.push(val)
-          } else if (typeof val === 'string') {
-            let idVal = ENV[val]
-            if (idVal !== undefined) {
-              if (typeof idVal === 'object') {
-                output = lambdaParser(input, val)
-                val = output[0][0]
-                input = output[1]
-                tempResult.push(val)
-              } else {
-                tempResult.push(idVal)
-              }
-            } else {
-              throw new Error(`${val} is not defined`)
-            }
-          } else {
-            tempResult.push(val)
-          }
-          input = output[1]
-          output = spaceParser(input)
-          if (output !== null) {
-            input = output[1]
-          }
-        }
-      }
-      while (input.startsWith(')')) {
-        input = input.slice(1)
-      }
-      if (input !== '') {
-        output = spaceParser(input)
-        if (output !== null) {
-          input = output[1]
-        }
-      }
-      if (tempResult.length === 1) {
-        console.log(tempResult[0])
-        if (input === '') {
-          return 'completed'
-        } else {
-          return input
-        }
-      } else {
-        while (true) {
-          let val = tempResult.pop()
-          if (typeof val === 'function') {
-            let res = val(...result.reverse())
-            result = []
-            tempResult.push(res)
-            if (tempResult.length === 1) break
-          } else {
-            result.push(val)
-          }
-        }
-      }
-      console.log(tempResult[0])
-      if (input === '') {
-        return 'completed'
-      } else {
-        return input
-      }
-    } else if (input.startsWith('define')) {
-      input = input.slice(7)
-      output = identifierParser(input)
-      if (output !== null) {
-        let iden = output[0]
-        input = output[1]
-        output = spaceParser(input)
-        input = output[1]
-        while (!input.startsWith(')')) {
-          output = expressionParser(input)
-          if (output !== null) {
-            tempResult.push(output[0])
-            input = output[1]
-            output = spaceParser(input)
-            if (output !== null) {
-              input = output[1]
-            }
-          }
-        }
-        while (input.startsWith(')')) {
-          input = input.slice(1)
-        }
-        if (input !== '') {
-          output = spaceParser(input)
-          if (output !== null) {
-            input = output[1]
-          }
-        }
-        if (tempResult.length === 1) {
-          ENV[iden] = tempResult[0]
-          if (input === '') {
-            return 'completed'
-          } else {
-            return input
-          }
-        } else {
-          while (true) {
-            let val = tempResult.pop()
-            if (typeof val === 'function') {
-              let res = val(...result.reverse())
-              result = []
-              tempResult.push(res)
-              if (tempResult.length === 1) break
-            } else {
-              result.push(val)
-            }
-          }
-        }
-        ENV[iden] = tempResult[0]
-        if (input === '') {
-          return 'completed'
-        } else {
-          return input
-        }
       }
     }
   }
-}
+  while (input.startsWith(')')) {
+    input = input.slice(1)
+  }
 
-const programParser = (input) => {
-  while (true) {
-    let output = ''
+  if (input !== '' && input !== undefined) {
     output = spaceParser(input)
     if (output !== null) {
       input = output[1]
     }
-    output = statementParser(input)
-    if (output === 'completed') {
-      return 'completed'
+  }
+  if (tempResult.length === 1) {
+    console.log(tempResult[0])
+    return input
+  } else {
+    while (true) {
+      let val = tempResult.pop()
+      if (typeof val === 'function') {
+        let res = val(...result.reverse())
+        result = []
+        tempResult.push(res)
+        if (tempResult.length === 1) break
+      } else {
+        result.push(val)
+      }
     }
-    input = output
+  }
+  console.log(tempResult[0])
+  // console.log('input', input);
+  return input
+}
+
+const defineParser = (input) => {
+  let output = ''
+  let tempResult = []
+  let result = []
+  input = input.slice(6)
+  output = spaceParser(input)
+  if (output !== null) {
+    input = output[1]
+  } else throw new Error(`Space is required after statement`)
+  output = identifierParser(input)
+  if (output !== null) {
+    let iden = output[0]
+    input = output[1]
+    output = spaceParser(input)
+    input = output[1]
+    while (!input.startsWith(')')) {
+      output = expressionParser(input)
+      if (output !== null) {
+        tempResult.push(output[0])
+        input = output[1]
+        output = spaceParser(input)
+        if (output !== null) {
+          input = output[1]
+        }
+      }
+    }
+    while (input.startsWith(')')) {
+      input = input.slice(1)
+    }
     if (input !== '') {
       output = spaceParser(input)
       if (output !== null) {
         input = output[1]
       }
     }
+    if (tempResult.length === 1) {
+      ENV[iden] = tempResult[0]
+      return input
+    } else {
+      while (true) {
+        let val = tempResult.pop()
+        if (typeof val === 'function') {
+          let res = val(...result.reverse())
+          result = []
+          tempResult.push(res)
+          if (tempResult.length === 1) break
+        } else {
+          result.push(val)
+        }
+      }
+    }
+    ENV[iden] = tempResult[0]
+    return input
   }
 }
 
-let input = fs.readFileSync('test.txt').toString()
-let output = programParser(input)
-console.log(output)
+const statementParser = (input) => {
+  let output = ''
+  let tempResult = []
+  let result = []
+  while (input.startsWith('(')) {
+    input = input.slice(1)
+    if (input.startsWith('print')) {
+      input = printParser(input)
+    } else if (input.startsWith('define')) {
+      input = defineParser(input)
+    }
+  }
+}
+
+const programParser = (code) => {
+  while (code !== '' && code !== undefined) {
+    let output = ''
+    output = spaceParser(code)
+    if (output !== null) {
+      code = output[1]
+    }
+    output = statementParser(code)
+    code = output
+  }
+}
+
+let code = fs.readFileSync('test.txt').toString()
+programParser(code)
 console.log(ENV)
