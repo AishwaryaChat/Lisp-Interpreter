@@ -114,8 +114,11 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
-const evalFunction = (tempResult, result) => {
+const evalFunction = (tempResult, result, iden) => {
   if (tempResult.length === 1) {
+    if (iden !== undefined) {
+      ENV[iden] = tempResult[0]
+    }
     return tempResult[0]
   } else {
     while (true) {
@@ -128,6 +131,9 @@ const evalFunction = (tempResult, result) => {
       } else {
         result.push(val)
       }
+    }
+    if (iden !== undefined) {
+      ENV[iden] = tempResult[0]
     }
     return tempResult[0]
   }
@@ -302,23 +308,7 @@ const defineParser = (input) => {
         input = output[1]
       }
     }
-    if (tempResult.length === 1) {
-      ENV[iden] = tempResult[0]
-      return input
-    } else {
-      while (true) {
-        let val = tempResult.pop()
-        if (typeof val === 'function') {
-          let res = val(...result.reverse())
-          result = []
-          tempResult.push(res)
-          if (tempResult.length === 1) break
-        } else {
-          result.push(val)
-        }
-      }
-    }
-    ENV[iden] = tempResult[0]
+    evalFunction(tempResult, result, iden)
     return input
   }
 }
