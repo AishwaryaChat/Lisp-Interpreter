@@ -8,5 +8,5 @@
 (print (* 40 50))(print 500)
 (define square (lambda (x) (* x x)))
 (print square a)
-(define add20 (lambda (y) (+ y 20)))
+(define add20 (lambda (y z k) (+ y 20)))
 (print add20 30)

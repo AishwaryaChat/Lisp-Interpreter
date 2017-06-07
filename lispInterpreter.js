@@ -36,49 +36,59 @@ const expressionParser = (input) => parserFactory(numParser, identifierParser, o
 const operatorParser = input => {
   if (input.startsWith('(')) {
     input = input.slice(1)
-    return parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, functionParser)(input)
+    return parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, lambdaParser)(input)
   }
   return null
 }
 
-const functionParser = input => {
+const argumentsParser = (input) => {
+  let args = []
+  let output = ''
+  while (!input.startsWith(')')) {
+    output = identifierParser(input, true)
+    args.push(output[0])
+    input = output[1]
+    output = spaceParser(input)
+    if (output !== null) {
+      input = output[1]
+    } else break
+  }
+  if (input.startsWith(')')) {
+    input = input.slice(1)
+  } else throw new Error('arguments must ends with )')
+  return [input, args]
+}
+
+const bodyPaser = (input) => {
+  if (!input.startsWith('(')) throw new Error('body must be in side brackets ()')
+  input = input.slice(1)
+  let body = '(', i = 1, j = 0, k = 0
+  while (i !== j) {
+    if (input[k] === '(') i++
+    if (input[k] === ')') j++
+    body = body + input[k]
+    k++
+  }
+  input = input.substring(k)
+  return [input, body]
+}
+
+const lambdaParser = input => {
   let output = ''
   let args = []
   if (input.startsWith('lambda')) {
     input = input.slice(7)
     if (!input.startsWith('(')) throw new Error('arguments must be in side brackets ()')
     input = input.slice(1)
-    while (!input.startsWith(')')) {
-      output = identifierParser(input, true)
-      args.push(output[0])
-      input = output[1]
-      output = spaceParser(input)
-      if (output !== null) {
-        input = output[1]
-      } else break
-    }
-    if (input.startsWith(')')) {
-      input = input.slice(1)
-    } else throw new Error('arguments must ends with )')
-    output = spaceParser(input)
-    input = output[1]
-    if (!input.startsWith('(')) throw new Error('body must be in side brackets ()')
-    input = input.slice(1)
-    let body = '('
-    let i = 1
-    let j = 0
-    let k = 0
-    while (i !== j) {
-      if (input[k] === '(') i++
-      if (input[k] === ')') j++
-      body = body + input[k]
-      k++
-    }
-    input = input.substring(k)
+    output = argumentsParser(input)
+    args = output[1]
+    output = spaceParser(output[0])
+    output = bodyPaser(output[1])
+    input = output[0]
     let obj = {
       type: 'lambda',
       args: args,
-      body: body,
+      body: output[1],
       env: {}
     }
     return [obj, input]
@@ -139,7 +149,7 @@ const evalFunction = (tempResult, result, iden) => {
   }
 }
 
-const lambdaParser = (input, val) => {
+const functionParser = (input, val) => {
   let output = ''
   let tempResult = []
   let result = []
@@ -236,7 +246,7 @@ const printParser = (input) => {
         let idVal = ENV[val]
         if (idVal !== undefined) {
           if (typeof idVal === 'object') {
-            output = lambdaParser(input, val)
+            output = functionParser(input, val)
             val = output[0][0]
             input = output[1]
             tempResult.push(val)
