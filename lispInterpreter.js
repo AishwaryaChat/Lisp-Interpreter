@@ -146,7 +146,6 @@ const parseFunction = (input, env) => {
           if (typeof idVal === 'object') {
             output = functionParser(input, val)
             val = output[0]
-            input = output[1]
             tempResult.push(val)
           } else {
             tempResult.push(idVal)
@@ -193,14 +192,10 @@ const evalFunction = (tempResult, iden) => {
   }
 }
 
-const functionParser = (input, val) => {
+const storeArgs = (input, args, env) => {
   let output = ''
-  let tempResult = []
-  let obj = ENV[val]
-  let {args, body, env} = obj
-  let lambdaInput = body
+  let param = ''
   let i = 0
-  let param = 0
   while (!input.startsWith(')')) {
     output = spaceParser(input)
     if (output !== null) {
@@ -220,6 +215,16 @@ const functionParser = (input, val) => {
     } else return new Error('No arguments are passed')
     i++
   }
+  return input
+}
+
+const functionParser = (input, val) => {
+  let output = ''
+  let tempResult = []
+  let obj = ENV[val]
+  let {args, body, env} = obj
+  let lambdaInput = body
+  input = storeArgs(input, args, env)
   output = parseFunction(lambdaInput, env)
   tempResult = output[0]
   if (input !== '') {
@@ -250,13 +255,6 @@ const printParser = (input) => {
   while (input.startsWith(')')) {
     input = input.slice(1)
   }
-
-  if (input !== '') {
-    output = spaceParser(input)
-    if (output !== null) {
-      input = output[1]
-    }
-  }
   let value = evalFunction(tempResult)
   console.log(value)
   return input
@@ -275,9 +273,7 @@ const defineParser = (input) => {
   output = identifierParser(input)
   if (output !== null) {
     let iden = output[0]
-    input = output[1]
-    output = spaceParser(input)
-    // console.log('output', output)
+    output = spaceParser(output[1])
     input = output[1]
     while (!input.startsWith(')')) {
       output = expressionParser(input)
@@ -293,12 +289,6 @@ const defineParser = (input) => {
     while (input.startsWith(')')) {
       input = input.slice(1)
     }
-    if (input !== '') {
-      output = spaceParser(input)
-      if (output !== null) {
-        input = output[1]
-      }
-    }
     evalFunction(tempResult, iden)
     return input
   }
@@ -313,7 +303,7 @@ const statementParser = (input) => {
 }
 
 const programParser = (code) => {
-  while (code !== '') {
+  while (code !== '' && code !== null) {
     let output = ''
     output = spaceParser(code)
     if (output !== null) {
