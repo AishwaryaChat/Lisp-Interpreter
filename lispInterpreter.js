@@ -48,7 +48,7 @@ const argumentsParser = (input) => {
     output = identifierParser(input, true)
     args.push(output[0])
     input = output[1]
-    output = spaceParser(input)
+    output = spaceParser(output[1])
     if (output !== null) {
       input = output[1]
     } else break
@@ -79,8 +79,7 @@ const lambdaParser = input => {
   if (input.startsWith('lambda')) {
     input = input.slice(7)
     if (!input.startsWith('(')) throw new Error('arguments must be in side brackets ()')
-    input = input.slice(1)
-    output = argumentsParser(input)
+    output = argumentsParser(input.slice(1))
     args = output[1]
     output = spaceParser(output[0])
     output = bodyParser(output[1])
@@ -124,6 +123,16 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
+const extractIdVal = (env, val) => {
+  let idVal = ''
+  if (env !== undefined) {
+    idVal = env[val]
+  } else {
+    idVal = ENV[val]
+  }
+  return idVal
+}
+
 const parseFunction = (input, env) => {
   let output = ''
   let tempResult = []
@@ -136,12 +145,7 @@ const parseFunction = (input, env) => {
       if (typeof val === 'number') {
         tempResult.push(val)
       } else if (typeof val === 'string') {
-        let idVal = ''
-        if (env !== undefined) {
-          idVal = env[val]
-        } else {
-          idVal = ENV[val]
-        }
+        let idVal = extractIdVal(env, val)
         if (idVal !== undefined) {
           if (typeof idVal === 'object') {
             output = functionParser(input, val)
@@ -166,35 +170,56 @@ const parseFunction = (input, env) => {
   return [tempResult, input]
 }
 
-const evalFunction = (tempResult, iden) => {
+const evaluation = (tempResult) => {
   let result = []
-  if (tempResult.length === 1) {
-    if (iden !== undefined) {
-      ENV[iden] = tempResult[0]
+  while (true) {
+    let val = tempResult.pop()
+    if (typeof val === 'function') {
+      let res = val(...result.reverse())
+      result = []
+      tempResult.push(res)
+      if (tempResult.length === 1) break
+    } else {
+      result.push(val)
     }
+  }
+  return tempResult
+}
+
+const idenCheck = (tempResult, iden) => {
+  if (iden !== undefined) {
+    ENV[iden] = tempResult[0]
+  }
+}
+
+const evalFunction = (tempResult, iden) => {
+  if (tempResult.length === 1) {
+    idenCheck(tempResult, iden)
     return tempResult[0]
   } else {
-    while (true) {
-      let val = tempResult.pop()
-      if (typeof val === 'function') {
-        let res = val(...result.reverse())
-        result = []
-        tempResult.push(res)
-        if (tempResult.length === 1) break
-      } else {
-        result.push(val)
-      }
-    }
-    if (iden !== undefined) {
-      ENV[iden] = tempResult[0]
-    }
+    tempResult = evaluation(tempResult)
+    idenCheck(tempResult, iden)
     return tempResult[0]
   }
 }
 
+const argsCheck = (output, i, env, args) => {
+  let input = ''
+  if (output !== null) {
+    input = output[1]
+    let param = output[0]
+    if (typeof param === 'number') env[args[i]] = param
+    else if (typeof param === 'string') {
+      if (ENV[param] !== undefined) {
+        env[args[i]] = ENV[param]
+      } else throw new Error(`${param} is undefined`)
+    }
+  } else return new Error('No arguments are passed')
+  return input
+}
+
 const storeArgs = (input, args, env) => {
   let output = ''
-  let param = ''
   let i = 0
   while (!input.startsWith(')')) {
     output = spaceParser(input)
@@ -202,17 +227,7 @@ const storeArgs = (input, args, env) => {
       input = output[1]
     } else throw new Error('space is required')
     output = identifierParser(input) || numParser(input)
-    if (output !== null) {
-      input = output[1]
-      param = output[0]
-      if (typeof param === 'number') {
-        env[args[i]] = param
-      } else if (typeof param === 'string') {
-        if (ENV[param] !== undefined) {
-          env[args[i]] = ENV[param]
-        } else throw new Error(`${param} is undefined`)
-      }
-    } else return new Error('No arguments are passed')
+    input = argsCheck(output, i, env, args)
     i++
   }
   return input
@@ -229,9 +244,7 @@ const functionParser = (input, val) => {
   tempResult = output[0]
   if (input !== '') {
     output = spaceParser(input)
-    if (output !== null) {
-      input = output[1]
-    }
+    if (output !== null) input = output[1]
   }
   tempResult = evalFunction(tempResult)
   return [tempResult, input]
@@ -240,18 +253,14 @@ const functionParser = (input, val) => {
 const printParser = (input) => {
   let output = ''
   let tempResult = []
-  if (input.startsWith('(print')) {
-    input = input.slice(6)
-  } else return null
+  if (input.startsWith('(print')) input = input.slice(6)
+  else return null
   output = spaceParser(input)
-  if (output !== null) {
-    input = output[1]
-  } else throw new Error(`Space is required after statement`)
-
+  if (output !== null) input = output[1]
+  else throw new Error(`Space is required after statement`)
   output = parseFunction(input)
   tempResult = output[0]
   input = output[1]
-
   while (input.startsWith(')')) {
     input = input.slice(1)
   }
@@ -260,38 +269,49 @@ const printParser = (input) => {
   return input
 }
 
-const defineParser = (input) => {
+const storeIdentifier = (input) => {
   let output = ''
   let tempResult = []
-  if (input.startsWith('(define')) {
-    input = input.slice(7)
-  } else return null
-  output = spaceParser(input)
-  if (output !== null) {
-    input = output[1]
-  } else throw new Error(`Space is required after statement`)
-  output = identifierParser(input)
+  while (!input.startsWith(')')) {
+    output = expressionParser(input)
+    if (output !== null) {
+      tempResult.push(output[0])
+      input = output[1]
+      output = spaceParser(input)
+      if (output !== null) {
+        input = output[1]
+      }
+    }
+  }
+  return [tempResult, input]
+}
+
+const checkSpaceStore = (output, input, tempResult) => {
   if (output !== null) {
     let iden = output[0]
     output = spaceParser(output[1])
     input = output[1]
-    while (!input.startsWith(')')) {
-      output = expressionParser(input)
-      if (output !== null) {
-        tempResult.push(output[0])
-        input = output[1]
-        output = spaceParser(input)
-        if (output !== null) {
-          input = output[1]
-        }
-      }
-    }
+    output = storeIdentifier(input)
+    tempResult = output[0]
+    input = output[1]
     while (input.startsWith(')')) {
       input = input.slice(1)
     }
     evalFunction(tempResult, iden)
     return input
   }
+}
+
+const defineParser = (input) => {
+  let output = ''
+  let tempResult = []
+  if (input.startsWith('(define')) input = input.slice(7)
+  else return null
+  output = spaceParser(input)
+  if (output !== null)input = output[1]
+  else throw new Error(`Space is required after statement`)
+  output = identifierParser(input)
+  return checkSpaceStore(output, input, tempResult)
 }
 
 const statementParser = (input) => {
