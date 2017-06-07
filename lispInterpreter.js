@@ -124,6 +124,49 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
+const parseFunction = (input, env) => {
+  let output = ''
+  let tempResult = []
+  let val = ''
+  while (!input.startsWith(')')) {
+    output = expressionParser(input)
+    if (output !== null) {
+      val = output[0]
+      input = output[1]
+      if (typeof val === 'number') {
+        tempResult.push(val)
+      } else if (typeof val === 'string') {
+        let idVal = ''
+        if (env !== undefined) {
+          idVal = env[val]
+        } else {
+          idVal = ENV[val]
+        }
+        if (idVal !== undefined) {
+          if (typeof idVal === 'object') {
+            output = functionParser(input, val)
+            val = output[0]
+            input = output[1]
+            tempResult.push(val)
+          } else {
+            tempResult.push(idVal)
+          }
+        } else {
+          throw new Error(`${val} is not defined`)
+        }
+      } else {
+        tempResult.push(val)
+      }
+      input = output[1]
+      output = spaceParser(input)
+      if (output !== null) {
+        input = output[1]
+      }
+    }
+  }
+  return [tempResult, input]
+}
+
 const evalFunction = (tempResult, iden) => {
   let result = []
   if (tempResult.length === 1) {
@@ -177,30 +220,8 @@ const functionParser = (input, val) => {
     } else return new Error('No arguments are passed')
     i++
   }
-  let tempVal = ''
-  while (!lambdaInput.startsWith(')')) {
-    output = expressionParser(lambdaInput)
-    if (output !== null) {
-      lambdaInput = output[1]
-      tempVal = output[0]
-      if (typeof tempVal === 'number') tempResult.push(tempVal)
-      else if (typeof tempVal === 'string') {
-        if (env[tempVal] !== undefined) {
-          tempVal = env[tempVal]
-        } else if (ENV[tempVal] !== undefined) {
-          tempVal = ENV[tempVal]
-        } else throw new Error(`${tempVal} is undefined`)
-        tempResult.push(tempVal)
-      } else {
-        tempResult.push(tempVal)
-      }
-    }
-    lambdaInput = output[1]
-    output = spaceParser(lambdaInput)
-    if (output !== null) {
-      lambdaInput = output[1]
-    }
-  }
+  output = parseFunction(lambdaInput, env)
+  tempResult = output[0]
   if (input !== '') {
     output = spaceParser(input)
     if (output !== null) {
@@ -213,7 +234,6 @@ const functionParser = (input, val) => {
 
 const printParser = (input) => {
   let output = ''
-  let val = ''
   let tempResult = []
   if (input.startsWith('(print')) {
     input = input.slice(6)
@@ -222,42 +242,16 @@ const printParser = (input) => {
   if (output !== null) {
     input = output[1]
   } else throw new Error(`Space is required after statement`)
-  while (!input.startsWith(')')) {
-    output = expressionParser(input)
-    if (output !== null) {
-      val = output[0]
-      input = output[1]
-      if (typeof val === 'number') {
-        tempResult.push(val)
-      } else if (typeof val === 'string') {
-        let idVal = ENV[val]
-        if (idVal !== undefined) {
-          if (typeof idVal === 'object') {
-            output = functionParser(input, val)
-            val = output[0]
-            input = output[1]
-            tempResult.push(val)
-          } else {
-            tempResult.push(idVal)
-          }
-        } else {
-          throw new Error(`${val} is not defined`)
-        }
-      } else {
-        tempResult.push(val)
-      }
-      input = output[1]
-      output = spaceParser(input)
-      if (output !== null) {
-        input = output[1]
-      }
-    }
-  }
+
+  output = parseFunction(input)
+  tempResult = output[0]
+  input = output[1]
+
   while (input.startsWith(')')) {
     input = input.slice(1)
   }
 
-  if (input !== '' && input !== undefined) {
+  if (input !== '') {
     output = spaceParser(input)
     if (output !== null) {
       input = output[1]
