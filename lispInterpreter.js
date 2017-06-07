@@ -36,7 +36,10 @@ const expressionParser = (input) => parserFactory(numParser, identifierParser, o
 const operatorParser = input => {
   if (input.startsWith('(')) {
     input = input.slice(1)
-    return parserFactory(plusParser, minusParser, multiplyParser, divideParser, gteParser, lteParser, gtParser, ltParser, etParser, ifParser, maxParser, minParser, notParser, lambdaParser)(input)
+    return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
+                         gteParser, lteParser, gtParser, ltParser, etParser,
+                         ifParser, maxParser, minParser, notParser,
+                         lambdaParser)(input)
   }
   return null
 }
@@ -123,14 +126,30 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
-const extractIdVal = (env, val) => {
-  let idVal = ''
-  if (env !== undefined) {
-    idVal = env[val]
+const extractIdVal = (env, val) => env !== undefined ? env[val] : ENV[val]
+
+const valCheck = (val, env, input, tempResult) => {
+  let output = ''
+  if (typeof val === 'number') {
+    tempResult.push(val)
+  } else if (typeof val === 'string') {
+    let idVal = extractIdVal(env, val)
+    if (idVal !== undefined) {
+      if (typeof idVal === 'object') {
+        output = functionParser(input, val)
+        val = output[0]
+        input = output[1]
+        tempResult.push(val)
+      } else {
+        tempResult.push(idVal)
+      }
+    } else {
+      throw new Error(`${val} is not defined`)
+    }
   } else {
-    idVal = ENV[val]
+    tempResult.push(val)
   }
-  return idVal
+  return [tempResult, input]
 }
 
 const parseFunction = (input, env) => {
@@ -142,24 +161,8 @@ const parseFunction = (input, env) => {
     if (output !== null) {
       val = output[0]
       input = output[1]
-      if (typeof val === 'number') {
-        tempResult.push(val)
-      } else if (typeof val === 'string') {
-        let idVal = extractIdVal(env, val)
-        if (idVal !== undefined) {
-          if (typeof idVal === 'object') {
-            output = functionParser(input, val)
-            val = output[0]
-            tempResult.push(val)
-          } else {
-            tempResult.push(idVal)
-          }
-        } else {
-          throw new Error(`${val} is not defined`)
-        }
-      } else {
-        tempResult.push(val)
-      }
+      output = valCheck(val, env, input, tempResult)
+      tempResult = output[0]
       input = output[1]
       output = spaceParser(input)
       if (output !== null) {
@@ -193,14 +196,11 @@ const idenCheck = (tempResult, iden) => {
 }
 
 const evalFunction = (tempResult, iden) => {
-  if (tempResult.length === 1) {
-    idenCheck(tempResult, iden)
-    return tempResult[0]
-  } else {
+  if (tempResult.length !== 1) {
     tempResult = evaluation(tempResult)
-    idenCheck(tempResult, iden)
-    return tempResult[0]
   }
+  idenCheck(tempResult, iden)
+  return tempResult[0]
 }
 
 const argsCheck = (output, i, env, args) => {
@@ -234,14 +234,12 @@ const storeArgs = (input, args, env) => {
 }
 
 const functionParser = (input, val) => {
-  let output = ''
-  let tempResult = []
   let obj = ENV[val]
   let {args, body, env} = obj
-  let lambdaInput = body
   input = storeArgs(input, args, env)
-  output = parseFunction(lambdaInput, env)
-  tempResult = output[0]
+  let lambdaInput = body
+  let output = parseFunction(lambdaInput, env)
+  let tempResult = output[0]
   if (input !== '') {
     output = spaceParser(input)
     if (output !== null) input = output[1]
