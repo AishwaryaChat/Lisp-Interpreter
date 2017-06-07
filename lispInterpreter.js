@@ -108,7 +108,7 @@ const numParser = input => {
 }
 
 const identifierParser = (input) => {
-  let match = input.match(/^[a-zA-Z]+/)
+  let match = input.match(/^[a-zA-Z]+[0-9]*[a-zA-Z]*/)
   if (match === null) return null
   let idStr = match[0]
   return [idStr, input.slice(idStr.length)]
@@ -287,6 +287,7 @@ const defineParser = (input) => {
     let iden = output[0]
     input = output[1]
     output = spaceParser(input)
+    // console.log('output', output)
     input = output[1]
     while (!input.startsWith(')')) {
       output = expressionParser(input)
