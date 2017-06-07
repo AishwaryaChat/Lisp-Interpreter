@@ -153,48 +153,52 @@ const functionParser = (input, val) => {
   let output = ''
   let tempResult = []
   let result = []
-  output = spaceParser(input)
-  if (output !== null) {
-    input = output[1]
-  } else throw new Error('space is required')
   let obj = ENV[val]
   let {args, body, env} = obj
-  args = args[0]
   let lambdaInput = body
-  output = identifierParser(input) || numParser(input)
-  if (output !== null) {
-    input = output[1]
-    let arg = output[0]
-    if (typeof arg === 'number') {
-      env[args] = arg
-    } else if (typeof arg === 'string') {
-      if (ENV[arg] !== undefined) {
-        env[args] = ENV[arg]
-      } else throw new Error(`${arg} is undefined`)
-    }
-    let tempVal = ''
-    while (!lambdaInput.startsWith(')')) {
-      output = expressionParser(lambdaInput)
-      if (output !== null) {
-        lambdaInput = output[1]
-        tempVal = output[0]
-        if (typeof tempVal === 'number') tempResult.push(tempVal)
-        else if (typeof tempVal === 'string') {
-          if (env[tempVal] !== undefined) {
-            tempVal = env[tempVal]
-          } else if (ENV[tempVal] !== undefined) {
-            tempVal = ENV[tempVal]
-          } else throw new Error(`${tempVal} is undefined`)
-          tempResult.push(tempVal)
-        } else {
-          tempResult.push(tempVal)
-        }
+  let i = 0
+  let param = 0
+  while (!input.startsWith(')')) {
+    output = spaceParser(input)
+    if (output !== null) {
+      input = output[1]
+    } else throw new Error('space is required')
+    output = identifierParser(input) || numParser(input)
+    if (output !== null) {
+      input = output[1]
+      param = output[0]
+      if (typeof param === 'number') {
+        env[args[i]] = param
+      } else if (typeof param === 'string') {
+        if (ENV[param] !== undefined) {
+          env[args[i]] = ENV[param]
+        } else throw new Error(`${param} is undefined`)
       }
+    } else return new Error('No arguments are passed')
+    i++
+  }
+  let tempVal = ''
+  while (!lambdaInput.startsWith(')')) {
+    output = expressionParser(lambdaInput)
+    if (output !== null) {
       lambdaInput = output[1]
-      output = spaceParser(lambdaInput)
-      if (output !== null) {
-        lambdaInput = output[1]
+      tempVal = output[0]
+      if (typeof tempVal === 'number') tempResult.push(tempVal)
+      else if (typeof tempVal === 'string') {
+        if (env[tempVal] !== undefined) {
+          tempVal = env[tempVal]
+        } else if (ENV[tempVal] !== undefined) {
+          tempVal = ENV[tempVal]
+        } else throw new Error(`${tempVal} is undefined`)
+        tempResult.push(tempVal)
+      } else {
+        tempResult.push(tempVal)
       }
+    }
+    lambdaInput = output[1]
+    output = spaceParser(lambdaInput)
+    if (output !== null) {
+      lambdaInput = output[1]
     }
   }
   while (lambdaInput.startsWith(')')) {
