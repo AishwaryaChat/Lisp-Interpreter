@@ -59,7 +59,7 @@ const argumentsParser = (input) => {
   return [input, args]
 }
 
-const bodyPaser = (input) => {
+const bodyParser = (input) => {
   if (!input.startsWith('(')) throw new Error('body must be in side brackets ()')
   input = input.slice(1)
   let body = '(', i = 1, j = 0, k = 0
@@ -83,7 +83,7 @@ const lambdaParser = input => {
     output = argumentsParser(input)
     args = output[1]
     output = spaceParser(output[0])
-    output = bodyPaser(output[1])
+    output = bodyParser(output[1])
     input = output[0]
     let obj = {
       type: 'lambda',
@@ -124,7 +124,8 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
-const evalFunction = (tempResult, result, iden) => {
+const evalFunction = (tempResult, iden) => {
+  let result = []
   if (tempResult.length === 1) {
     if (iden !== undefined) {
       ENV[iden] = tempResult[0]
@@ -152,7 +153,6 @@ const evalFunction = (tempResult, result, iden) => {
 const functionParser = (input, val) => {
   let output = ''
   let tempResult = []
-  let result = []
   let obj = ENV[val]
   let {args, body, env} = obj
   let lambdaInput = body
@@ -201,37 +201,20 @@ const functionParser = (input, val) => {
       lambdaInput = output[1]
     }
   }
-  while (lambdaInput.startsWith(')')) {
-    lambdaInput = lambdaInput.slice(1)
-  }
   if (input !== '') {
     output = spaceParser(input)
     if (output !== null) {
       input = output[1]
     }
   }
-  if (tempResult.length === 1) {
-    return [tempResult, input]
-  } else {
-    while (true) {
-      let someval = tempResult.pop()
-      if (typeof someval === 'function') {
-        let res = someval(...result.reverse())
-        result = []
-        tempResult.push(res)
-        if (tempResult.length === 1) break
-      } else {
-        result.push(someval)
-      }
-    }
-    return [tempResult, input]
-  }
+  tempResult = evalFunction(tempResult)
+  return [tempResult, input]
 }
+
 const printParser = (input) => {
   let output = ''
   let val = ''
   let tempResult = []
-  let result = []
   if (input.startsWith('(print')) {
     input = input.slice(6)
   } else return null
@@ -251,7 +234,7 @@ const printParser = (input) => {
         if (idVal !== undefined) {
           if (typeof idVal === 'object') {
             output = functionParser(input, val)
-            val = output[0][0]
+            val = output[0]
             input = output[1]
             tempResult.push(val)
           } else {
@@ -280,7 +263,7 @@ const printParser = (input) => {
       input = output[1]
     }
   }
-  let value = evalFunction(tempResult, result)
+  let value = evalFunction(tempResult)
   console.log(value)
   return input
 }
@@ -288,7 +271,6 @@ const printParser = (input) => {
 const defineParser = (input) => {
   let output = ''
   let tempResult = []
-  let result = []
   if (input.startsWith('(define')) {
     input = input.slice(7)
   } else return null
@@ -323,7 +305,7 @@ const defineParser = (input) => {
         input = output[1]
       }
     }
-    evalFunction(tempResult, result, iden)
+    evalFunction(tempResult, iden)
     return input
   }
 }
