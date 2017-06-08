@@ -364,24 +364,19 @@ const parseEval = (input) => {
   }
 }
 
+const spaceRequired = (input) => spaceParser(input) ? spaceParser(input)[1]
+                                 : new Error(`Space is required after statement`)
+
 const ifParser = (input) => {
   if (input.startsWith('(if')) input = input.slice(3)
   else return null
-  let output = spaceParser(input)
-  if (output !== null) input = output[1]
-  else throw new Error(`Space is required after statement`)
-  output = parseEval(input)
+  input = spaceRequired(input)
+  let output = parseEval(input)
   let test = output[0]
-  input = output[1]
-  output = spaceParser(input)
-  if (output !== null) input = output[1]
-  else throw new Error(`Space is required after condition`)
+  input = spaceRequired(output[1])
   output = parseEval(input)
   let conseq = output[0]
-  input = output[1]
-  output = spaceParser(input)
-  if (output !== null) input = output[1]
-  else throw new Error(`Space is required after conseq`)
+  input = spaceRequired(output[1])
   output = parseEval(input)
   let alt = output[0]
   input = output[1]
