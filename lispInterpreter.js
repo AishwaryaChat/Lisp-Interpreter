@@ -335,6 +335,14 @@ const evalParser = (tempResult) => {
   return tempResult[0]
 }
 
+const checkType = (input) => {
+  if (typeof input === 'number') return input
+  else if (typeof input === 'string') {
+    if (ENV[input] !== undefined) return ENV[input]
+    else throw new Error(`${input} is undefined`)
+  }
+}
+
 const parse = (input) => {
   let tempResult = []
   if (input.startsWith('(')) {
@@ -347,21 +355,21 @@ const parse = (input) => {
       if (output !== null) input = output[1]
     }
     while (input.startsWith(')')) input = input.slice(1)
-    return [tempResult, input]
+  } else {
+    let output = parserFactory(numParser, identifierParser)(input)
+    input = output[1]
+    output = checkType(output[0])
+    tempResult = [output]
   }
+  return [tempResult, input]
 }
 
 const parseEval = (input) => {
-  let output = ''
-  if (input.startsWith('(')) {
-    output = parse(input)
-    let tempResult = output[0]
-    input = output[1]
-    output = evalParser(tempResult)
-    return [output, input]
-  } else {
-
-  }
+  let output = parse(input)
+  let tempResult = output[0]
+  input = output[1]
+  output = evalParser(tempResult)
+  return [output, input]
 }
 
 const spaceRequired = (input) => spaceParser(input) ? spaceParser(input)[1]
