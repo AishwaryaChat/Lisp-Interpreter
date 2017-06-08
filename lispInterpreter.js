@@ -15,6 +15,7 @@ const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
 const notFun = a => !a
+const consFun = a => [a]
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -31,8 +32,10 @@ const falseParser = input => input.startsWith('false') ? [false, input.slice(5)]
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
+const consParser = input => input.startsWith('cons') ? [consFun, input.slice(4)] : null
 
-const expressionParser = (input) => parserFactory(numParser, identifierParser, operatorParser)(input)
+const expressionParser = (input) => parserFactory(lambdaParser, operatorParser, numParser,
+                                                  identifierParser)(input)
 
 const operatorParser = input => {
   if (input.startsWith('(')) {
@@ -40,11 +43,11 @@ const operatorParser = input => {
     return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                          gteParser, lteParser, gtParser, ltParser, etParser,
                          ifParser, maxParser, minParser, notParser, trueParser,
-                         falseParser, lambdaParser)(input)
+                         falseParser, consParser, lambdaParser)(input)
   } else return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                        gteParser, lteParser, gtParser, ltParser, etParser,
                        ifParser, maxParser, minParser, notParser, trueParser,
-                       falseParser, lambdaParser)(input)
+                       falseParser, consParser, lambdaParser)(input)
   return null
 }
 
@@ -88,9 +91,7 @@ const lambdaParser = input => {
   let args = []
   if (input.startsWith('lambda')) {
     input = input.slice(6)
-    output = spaceParser(input)
-    if (output !== null) input = output[1]
-    else throw new Error(`Space is required after statement`)
+    input = spaceRequired(input)
     if (!input.startsWith('(')) throw new Error('arguments must be in side brackets ()')
     output = argumentsParser(input.slice(1))
     args = output[1]
@@ -104,7 +105,7 @@ const lambdaParser = input => {
       env: {}
     }
     return [obj, input]
-  }
+  } else return null
 }
 
 const parserFactory = (...parsers) => input => {
@@ -158,27 +159,6 @@ const valCheck = (val, env, input, tempResult) => {
     }
   } else {
     tempResult.push(val)
-  }
-  return [tempResult, input]
-}
-
-const parseFunction = (input, env) => {
-  let output = ''
-  let tempResult = []
-  let val = ''
-  while (!input.startsWith(')')) {
-    output = expressionParser(input)
-    if (output !== null) {
-      val = output[0]
-      input = output[1]
-      output = valCheck(val, env, input, tempResult)
-      tempResult = output[0]
-      input = output[1]
-      output = spaceParser(input)
-      if (output !== null) {
-        input = output[1]
-      }
-    }
   }
   return [tempResult, input]
 }
@@ -243,6 +223,27 @@ const storeArgs = (input, args, env) => {
   return input
 }
 
+const parseFunction = (input, env) => {
+  let output = ''
+  let tempResult = []
+  let val = ''
+  while (!input.startsWith(')')) {
+    output = expressionParser(input)
+    if (output !== null) {
+      val = output[0]
+      input = output[1]
+      output = valCheck(val, env, input, tempResult)
+      tempResult = output[0]
+      input = output[1]
+      output = spaceParser(input)
+      if (output !== null) {
+        input = output[1]
+      }
+    }
+  }
+  return [tempResult, input]
+}
+
 const functionParser = (input, val) => {
   let obj = ENV[val]
   let {args, body, env} = obj
@@ -258,67 +259,9 @@ const functionParser = (input, val) => {
   return [tempResult, input]
 }
 
-const printParser = (input) => {
-  let output = ''
-  let tempResult = []
-  if (input.startsWith('(print')) input = input.slice(6)
-  else return null
-  output = spaceParser(input)
-  if (output !== null) input = output[1]
-  else throw new Error(`Space is required after statement`)
-  output = parseFunction(input)
-  tempResult = output[0]
-  input = output[1]
-  while (input.startsWith(')')) {
-    input = input.slice(1)
-  }
-  let value = evalFunction(tempResult)
-  console.log(value)
-  return input
-}
-
-const storeIdentifier = (input) => {
-  let output = ''
-  let tempResult = []
-  while (!input.startsWith(')')) {
-    output = expressionParser(input)
-    if (output !== null) {
-      tempResult.push(output[0])
-      input = output[1]
-      output = spaceParser(input)
-      if (output !== null) {
-        input = output[1]
-      }
-    }
-  }
-  return [tempResult, input]
-}
-
-const checkSpaceStore = (output, input) => {
-  let tempResult = []
-  if (output !== null) {
-    let iden = output[0]
-    output = spaceParser(output[1])
-    input = output[1]
-    output = storeIdentifier(input)
-    tempResult = output[0]
-    input = output[1]
-    while (input.startsWith(')')) {
-      input = input.slice(1)
-    }
-    evalFunction(tempResult, iden)
-    return input
-  }
-}
-
-const defineParser = (input) => {
-  if (input.startsWith('(define')) input = input.slice(7)
-  else return null
-  let output = spaceParser(input)
-  if (output !== null) input = output[1]
-  else throw new Error(`Space is required after statement`)
-  output = identifierParser(input)
-  return checkSpaceStore(output, input)
+const storeIden = (tempResult, iden) => {
+  if (ENV[iden] === undefined) ENV[iden] = tempResult
+  else throw new Error(`${iden} is already defined`)
 }
 
 const evalParser = (tempResult) => {
@@ -344,16 +287,18 @@ const checkType = (input) => {
     if (ENV[input] !== undefined) return ENV[input]
     else throw new Error(`${input} is undefined`)
   }
+  return input
 }
 
 const parse = (input) => {
   let tempResult = []
   if (input.startsWith('(')) {
-    while (!input.startsWith(')')) {    // (+ 4 (* 3 4))
+    while (!input.startsWith(')')) {
       if (input.startsWith('(')) input = input.slice(1)
       let output = expressionParser(input)
-      tempResult.push(output[0])
       input = output[1]
+      output = checkType(output[0])
+      tempResult.push(output)
       output = spaceParser(input)
       if (output !== null) input = output[1]
     }
@@ -365,6 +310,7 @@ const parse = (input) => {
     tempResult = [output]
   }
   while (input.startsWith(')')) input = input.slice(1)
+  // console.log('tempResult', tempResult)
   return [tempResult, input]
 }
 
@@ -372,8 +318,42 @@ const parseEval = (input) => {
   let output = parse(input)
   let tempResult = output[0]
   input = output[1]
-  let result = evalParser(tempResult)
-  return [result, input]
+  tempResult = evalParser(tempResult)
+  return [tempResult, input]
+}
+
+const printParser = (input) => {
+  let output = ''
+  let tempResult = []
+  if (input.startsWith('(print')) input = input.slice(6)
+  else return null
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  else throw new Error(`Space is required after statement`)
+  output = parseFunction(input)
+  tempResult = output[0]
+  input = output[1]
+  while (input.startsWith(')')) {
+    input = input.slice(1)
+  }
+  let value = evalFunction(tempResult)
+  console.log(value)
+  return input
+}
+
+const defineParser = (input) => {
+  if (input.startsWith('(define')) input = input.slice(7)
+  else return null
+  input = spaceRequired(input)
+  let output = identifierParser(input)
+  let iden = output[0]
+  input = spaceRequired(output[1])
+  output = parseEval(input)
+  input = output[1]
+  storeIden(output[0], iden)
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  return input
 }
 
 const ifParser = (input) => {
