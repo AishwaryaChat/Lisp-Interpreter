@@ -26,7 +26,8 @@ const ltParser = input => input.startsWith('<') ? [lessThan, input.slice(1)] : n
 const gteParser = input => input.startsWith('>=') ? [gtEqTo, input.slice(2)] : null
 const lteParser = input => input.startsWith('<=') ? [ltEqTo, input.slice(2)] : null
 const etParser = input => input.startsWith('==') ? [eqTo, input.slice(2)] : null
-const ifParser = input => input.startsWith('if') ? [ifFun, input.slice(2)] : null
+const trueParser = input => input.startsWith('true') ? [true, input.slice(4)] : null
+const falseParser = input => input.startsWith('false') ? [false, input.slice(5)] : null
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
@@ -80,7 +81,10 @@ const lambdaParser = input => {
   let output = ''
   let args = []
   if (input.startsWith('lambda')) {
-    input = input.slice(7)
+    input = input.slice(6)
+    output = spaceParser(input)
+    if (output !== null) input = output[1]
+    else throw new Error(`Space is required after statement`)
     if (!input.startsWith('(')) throw new Error('arguments must be in side brackets ()')
     output = argumentsParser(input.slice(1))
     args = output[1]
@@ -284,7 +288,8 @@ const storeIdentifier = (input) => {
   return [tempResult, input]
 }
 
-const checkSpaceStore = (output, input, tempResult) => {
+const checkSpaceStore = (output, input) => {
+  let tempResult = []
   if (output !== null) {
     let iden = output[0]
     output = spaceParser(output[1])
@@ -301,20 +306,58 @@ const checkSpaceStore = (output, input, tempResult) => {
 }
 
 const defineParser = (input) => {
-  let output = ''
-  let tempResult = []
   if (input.startsWith('(define')) input = input.slice(7)
   else return null
-  output = spaceParser(input)
-  if (output !== null)input = output[1]
+  let output = spaceParser(input)
+  if (output !== null) input = output[1]
   else throw new Error(`Space is required after statement`)
   output = identifierParser(input)
-  return checkSpaceStore(output, input, tempResult)
+  return checkSpaceStore(output, input)
+}
+
+const findAlt = (input) => numParser(input)
+
+const findConseq = (input) => numParser(input)
+
+const findConditionalOperation = (input) => parserFactory(trueParser, falseParser)(input)
+
+const testParser = (input) => findConditionalOperation(input)
+
+const ifParser = (input) => {
+  if (input.startsWith('(if')) input = input.slice(3)
+  else return null
+  let output = spaceParser(input)
+  if (output !== null) input = output[1]
+  else throw new Error(`Space is required after statement`)
+  output = testParser(input)
+  let test = output[0]
+  input = output[1]
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  else throw new Error(`Space is required after statement`)
+  output = findConseq(input)
+  let conseq = output[0]
+  input = output[1]
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  else throw new Error(`Space is required after statement`)
+  output = findAlt(input)
+  let alt = output[0]
+  input = output[1]
+  output = ifFun(test, conseq, alt)
+  while (input.startsWith(')')) {
+    input = input.slice(1)
+  }
+  return [input, output]
 }
 
 const statementParser = (input) => {
   if (defineParser(input) !== null) {
     return defineParser(input)
+  } else if (ifParser(input) !== null) {
+    let output = ifParser(input)
+    console.log(output[1])
+    return output[0]
   } else {
     return printParser(input)
   }
