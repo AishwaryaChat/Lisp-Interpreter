@@ -48,6 +48,9 @@ const operatorParser = input => {
   return null
 }
 
+const spaceRequired = (input) => spaceParser(input) ? spaceParser(input)[1]
+                                 : new Error(`Space is required`)
+
 const argumentsParser = (input) => {
   let args = []
   let output = ''
@@ -346,7 +349,7 @@ const checkType = (input) => {
 const parse = (input) => {
   let tempResult = []
   if (input.startsWith('(')) {
-    while (!input.startsWith(')')) {
+    while (!input.startsWith(')')) {    // (+ 4 (* 3 4))
       if (input.startsWith('(')) input = input.slice(1)
       let output = expressionParser(input)
       tempResult.push(output[0])
@@ -361,6 +364,7 @@ const parse = (input) => {
     output = checkType(output[0])
     tempResult = [output]
   }
+  while (input.startsWith(')')) input = input.slice(1)
   return [tempResult, input]
 }
 
@@ -368,12 +372,9 @@ const parseEval = (input) => {
   let output = parse(input)
   let tempResult = output[0]
   input = output[1]
-  output = evalParser(tempResult)
-  return [output, input]
+  let result = evalParser(tempResult)
+  return [result, input]
 }
-
-const spaceRequired = (input) => spaceParser(input) ? spaceParser(input)[1]
-                                 : new Error(`Space is required after statement`)
 
 const ifParser = (input) => {
   if (input.startsWith('(if')) input = input.slice(3)
@@ -389,26 +390,22 @@ const ifParser = (input) => {
   let alt = output[0]
   input = output[1]
   output = ifFun(test, conseq, alt)
-  while (input.startsWith(')')) {
-    input = input.slice(1)
-  }
-  return [input, output]
+  console.log(output)
+  return input
 }
 
-const statementParser = (input) => {
-  if (defineParser(input) !== null) {
-    return defineParser(input)
-  } else if (ifParser(input) !== null) {
-    let output = ifParser(input)
-    console.log(output[1])
-    return output[0]
-  } else {
-    return printParser(input)
-  }
+const justExpressionParser = (input) => {
+  let output = parseEval(input)
+  input = spaceRequired(output[1])
+  console.log(output[0])
+  return input
 }
+
+const statementParser = (input) => parserFactory(defineParser, printParser,
+                                                 ifParser, justExpressionParser)(input)
 
 const programParser = (code) => {
-  while (code !== '' && code !== null) {
+  while (code !== '') {
     let output = ''
     output = spaceParser(code)
     if (output !== null) {
