@@ -39,9 +39,12 @@ const operatorParser = input => {
     input = input.slice(1)
     return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                          gteParser, lteParser, gtParser, ltParser, etParser,
-                         ifParser, maxParser, minParser, notParser,
-                         lambdaParser)(input)
-  }
+                         ifParser, maxParser, minParser, notParser, trueParser,
+                         falseParser, lambdaParser)(input)
+  } else return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
+                       gteParser, lteParser, gtParser, ltParser, etParser,
+                       ifParser, maxParser, minParser, notParser, trueParser,
+                       falseParser, lambdaParser)(input)
   return null
 }
 
@@ -315,13 +318,51 @@ const defineParser = (input) => {
   return checkSpaceStore(output, input)
 }
 
-const findAlt = (input) => numParser(input)
+const evalParser = (tempResult) => {
+  let result = []
+  while (true) {
+    if (tempResult.length === 1 && typeof tempResult[0] !== 'function') break
+    let val = tempResult.pop()
+    if (typeof val === 'function') {
+      let res = val(...result.reverse())
+      result = []
+      tempResult.push(res)
+      if (tempResult.length === 1) break
+    } else {
+      result.push(val)
+    }
+  }
+  return tempResult[0]
+}
 
-const findConseq = (input) => numParser(input)
+const parse = (input) => {
+  let tempResult = []
+  if (input.startsWith('(')) {
+    while (!input.startsWith(')')) {
+      if (input.startsWith('(')) input = input.slice(1)
+      let output = expressionParser(input)
+      tempResult.push(output[0])
+      input = output[1]
+      output = spaceParser(input)
+      if (output !== null) input = output[1]
+    }
+    while (input.startsWith(')')) input = input.slice(1)
+    return [tempResult, input]
+  }
+}
 
-const findConditionalOperation = (input) => parserFactory(trueParser, falseParser)(input)
+const parseEval = (input) => {
+  let output = ''
+  if (input.startsWith('(')) {
+    output = parse(input)
+    let tempResult = output[0]
+    input = output[1]
+    output = evalParser(tempResult)
+    return [output, input]
+  } else {
 
-const testParser = (input) => findConditionalOperation(input)
+  }
+}
 
 const ifParser = (input) => {
   if (input.startsWith('(if')) input = input.slice(3)
@@ -329,19 +370,19 @@ const ifParser = (input) => {
   let output = spaceParser(input)
   if (output !== null) input = output[1]
   else throw new Error(`Space is required after statement`)
-  output = testParser(input)
+  output = parseEval(input)
   let test = output[0]
   input = output[1]
   output = spaceParser(input)
   if (output !== null) input = output[1]
-  else throw new Error(`Space is required after statement`)
-  output = findConseq(input)
+  else throw new Error(`Space is required after condition`)
+  output = parseEval(input)
   let conseq = output[0]
   input = output[1]
   output = spaceParser(input)
   if (output !== null) input = output[1]
-  else throw new Error(`Space is required after statement`)
-  output = findAlt(input)
+  else throw new Error(`Space is required after conseq`)
+  output = parseEval(input)
   let alt = output[0]
   input = output[1]
   output = ifFun(test, conseq, alt)
