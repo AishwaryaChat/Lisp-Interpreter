@@ -2,20 +2,22 @@ const fs = require('fs')
 const ENV = {}
 
 // Lisp Functions
-const plus = (a, b) => a + b
-const minus = (a, b) => a - b
-const multiply = (a, b) => a * b
-const divide = (a, b) => (b === 0) ? 'Can not divide by zero' : a / b
-const greaterThan = (a, b) => a > b
-const lessThan = (a, b) => a < b
-const gtEqTo = (a, b) => a >= b
-const ltEqTo = (a, b) => a <= b
-const eqTo = (a, b) => a === b
+const plus = list => list.reduce((acc, item) => acc + item, 0)
+const minus = list => list.reduce((acc, item) => acc - item)
+const multiply = list => list.reduce((acc, item) => acc * item, 1)
+const divide = list => (list[1] === 0) ? new Error(`Cannot divide by zero`) : list[0] / list[1]
+const greaterThan = list => list[0] > list[1]
+const lessThan = list => list[0] < list[1]
+const gtEqTo = list => list[0] >= list[1]
+const ltEqTo = list => list[0] <= list[1]
+const eqTo = list => list[0] === list[1]
 const ifFun = (a, b, c) => a ? b : c
-const maxFun = (a, b) => a > b ? a : b
-const minFun = (a, b) => a < b ? a : b
-const notFun = a => !a
-const listFun = (a, lis = []) => a.map(ele => lis.push(ele))
+const maxFun = list => Math.max(...list)
+const minFun = list => Math.min(...list)
+const notFun = list => !list[0]
+const listFun = list => list
+const carFun = list => list[list.length - 1]
+const cdrFun = list => list[0]
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -33,6 +35,8 @@ const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : 
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
 const listParser = (input) => input.startsWith('list') ? [listFun, input.slice(4)] : null
+const carParser = (input) => input.startsWith('car') ? [carFun, input.slice(3)] : null
+const cdrParser = (input) => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : null
 
 const expressionParser = (input) => parserFactory(lambdaParser, operatorParser, numParser,
                                                   identifierParser)(input)
@@ -43,11 +47,11 @@ const operatorParser = input => {
     return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                          gteParser, lteParser, gtParser, ltParser, etParser,
                          ifParser, maxParser, minParser, notParser, trueParser,
-                         falseParser, listParser, lambdaParser)(input)
+                         falseParser, listParser, carParser, cdrParser, lambdaParser)(input)
   } else return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
-                       gteParser, lteParser, gtParser, ltParser, etParser,
-                       ifParser, maxParser, minParser, notParser, trueParser,
-                       falseParser, listParser, lambdaParser)(input)
+                              gteParser, lteParser, gtParser, ltParser, etParser,
+                              ifParser, maxParser, minParser, notParser, trueParser,
+                              falseParser, listParser, carParser, cdrParser, lambdaParser)(input)
   return null
 }
 
@@ -236,9 +240,7 @@ const parseFunction = (input, env) => {
       tempResult = output[0]
       input = output[1]
       output = spaceParser(input)
-      if (output !== null) {
-        input = output[1]
-      }
+      if (output !== null) input = output[1]
     }
   }
   return [tempResult, input]
@@ -295,6 +297,8 @@ const evalParser = (tempResult) => {
       result = []
       tempResult.push(res)
       if (tempResult.length === 1) break
+    } else if (typeof val === 'object') {
+        result.push(...val)
     } else {
       result.push(val)
     }
@@ -339,6 +343,7 @@ const parseEval = (input) => {
   let tempResult = output[0]
   input = output[1]
   tempResult = evalParser(tempResult)
+
   return [tempResult, input]
 }
 
@@ -372,6 +377,8 @@ const ifParser = (input) => {
   input = output[1]
   output = ifFun(test, conseq, alt)
   console.log(output)
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
   return input
 }
 
