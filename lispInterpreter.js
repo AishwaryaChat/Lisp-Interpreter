@@ -15,7 +15,7 @@ const ifFun = (a, b, c) => a ? b : c
 const maxFun = (a, b) => a > b ? a : b
 const minFun = (a, b) => a < b ? a : b
 const notFun = a => !a
-const consFun = a => [a]
+const listFun = (a, lis = []) => a.map(ele => lis.push(ele))
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -32,7 +32,7 @@ const falseParser = input => input.startsWith('false') ? [false, input.slice(5)]
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
-const consParser = input => input.startsWith('cons') ? [consFun, input.slice(4)] : null
+const listParser = (input) => input.startsWith('list') ? [listFun, input.slice(4)] : null
 
 const expressionParser = (input) => parserFactory(lambdaParser, operatorParser, numParser,
                                                   identifierParser)(input)
@@ -43,11 +43,11 @@ const operatorParser = input => {
     return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                          gteParser, lteParser, gtParser, ltParser, etParser,
                          ifParser, maxParser, minParser, notParser, trueParser,
-                         falseParser, consParser, lambdaParser)(input)
+                         falseParser, listParser, lambdaParser)(input)
   } else return parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                        gteParser, lteParser, gtParser, ltParser, etParser,
                        ifParser, maxParser, minParser, notParser, trueParser,
-                       falseParser, consParser, lambdaParser)(input)
+                       falseParser, listParser, lambdaParser)(input)
   return null
 }
 
@@ -168,7 +168,7 @@ const evaluation = (tempResult) => {
   while (true) {
     let val = tempResult.pop()
     if (typeof val === 'function') {
-      let res = val(...result.reverse())
+      let res = val(result.reverse())
       result = []
       tempResult.push(res)
       if (tempResult.length === 1) break
@@ -259,6 +259,27 @@ const functionParser = (input, val) => {
   return [tempResult, input]
 }
 
+const printParser = (input) => {
+  let output = ''
+  let tempResult = []
+  if (input.startsWith('(print')) input = input.slice(6)
+  else return null
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  else throw new Error(`Space is required after statement`)
+  output = parseFunction(input)
+  tempResult = output[0]
+  input = output[1]
+  while (input.startsWith(')')) {
+    input = input.slice(1)
+  }
+  let value = evalFunction(tempResult)
+  console.log(value)
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  return input
+}
+
 const storeIden = (tempResult, iden) => {
   if (ENV[iden] === undefined) ENV[iden] = tempResult
   else throw new Error(`${iden} is already defined`)
@@ -270,7 +291,7 @@ const evalParser = (tempResult) => {
     if (tempResult.length === 1 && typeof tempResult[0] !== 'function') break
     let val = tempResult.pop()
     if (typeof val === 'function') {
-      let res = val(...result.reverse())
+      let res = val(result.reverse())
       result = []
       tempResult.push(res)
       if (tempResult.length === 1) break
@@ -310,7 +331,6 @@ const parse = (input) => {
     tempResult = [output]
   }
   while (input.startsWith(')')) input = input.slice(1)
-  // console.log('tempResult', tempResult)
   return [tempResult, input]
 }
 
@@ -320,25 +340,6 @@ const parseEval = (input) => {
   input = output[1]
   tempResult = evalParser(tempResult)
   return [tempResult, input]
-}
-
-const printParser = (input) => {
-  let output = ''
-  let tempResult = []
-  if (input.startsWith('(print')) input = input.slice(6)
-  else return null
-  output = spaceParser(input)
-  if (output !== null) input = output[1]
-  else throw new Error(`Space is required after statement`)
-  output = parseFunction(input)
-  tempResult = output[0]
-  input = output[1]
-  while (input.startsWith(')')) {
-    input = input.slice(1)
-  }
-  let value = evalFunction(tempResult)
-  console.log(value)
-  return input
 }
 
 const defineParser = (input) => {
