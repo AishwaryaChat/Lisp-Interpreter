@@ -34,9 +34,10 @@ const falseParser = input => input.startsWith('false') ? [false, input.slice(5)]
 const maxParser = input => input.startsWith('max') ? [maxFun, input.slice(3)] : null
 const minParser = input => input.startsWith('min') ? [minFun, input.slice(3)] : null
 const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : null
-const listParser = (input) => input.startsWith('list') ? [listFun, input.slice(4)] : null
-const carParser = (input) => input.startsWith('car') ? [carFun, input.slice(3)] : null
-const cdrParser = (input) => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : null
+const listParser = input => input.startsWith('list') ? [listFun, input.slice(4)] : null
+const carParser = input => input.startsWith('car') ? [carFun, input.slice(3)] : null
+const cdrParser = input => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : null
+const parseDefine = input => input.startsWith('define') ? ['define', input.slice(6)] : null
 
 const expressionParser = (input) => parserFactory(lambdaParser, operatorParser, numParser,
                                                   identifierParser)(input)
