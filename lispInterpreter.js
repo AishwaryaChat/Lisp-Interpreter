@@ -120,6 +120,16 @@ const parserFactory = (...parsers) => input => {
   return null
 }
 
+const allParsers = (...parsers) => input => {
+  let result = []
+  for (let parser of parsers) {
+    let output = parser(input)
+    if (output === null) return null
+    result.push(output)
+  }
+  return result
+}
+
 const spaceParser = input => {
   let match = input.match(/^[\s\n]/)
   if (match === null) return null
