@@ -133,11 +133,16 @@ const closeBracket = input => input.startsWith(')') ? [')', input.slice(1)] : nu
 
 const expressionParser = input => parserFactory(operatorParser, numParser, identifierParser)(input)
 
+const storeIden = (id, val) => {
+  if (ENV[id] === undefined) ENV[id] = val
+  else throw new Error(`${val} is already defined`)
+}
+
 const defineParser = (input) => {
   let output = allParsers(openBracket, parseDefine, spaceParser, identifierParser, spaceParser, expressionParser, closeBracket)(input)
   if (output === null) return null
   let [[, , , id, , val], rest] = output
-  ENV[id] = val
+  storeIden(id, val)
   input = rest
   output = spaceParser(input)
   if (output !== null) input = output[1]
