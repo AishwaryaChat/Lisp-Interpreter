@@ -130,6 +130,10 @@ const allParsers = (...parsers) => input => {
   return result
 }
 
+const openBracket = input => input.startsWith('(') ? ['(', input.slice(1)] : null
+
+const closeBracket = input => input.startsWith(')') ? [')', input.slice(1)] : null
+
 const spaceParser = input => {
   let match = input.match(/^[\s\n]/)
   if (match === null) return null
