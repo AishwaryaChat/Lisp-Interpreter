@@ -83,6 +83,57 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
+const bodyParser = input => {
+  let output = openBracket(input)
+  input = output[1]
+  let body = '('
+  let i = 1
+  let j = 0
+  let k = 0
+  while (i !== j) {
+    if (input[k] === '(') i++
+    if (input[k] === ')') j++
+    body = body + input[k]
+    k++
+  }
+  input = input.substring(k)
+  return [body, input]
+}
+
+const argumentsParser = input => {
+  let output = openBracket(input)
+  if (output !== null) {
+    let args = []
+    input = output[1]
+    while (closeBracket(input) === null) {
+      output = identifierParser(input)
+      if (output !== null) {
+        args.push(output[0])
+        input = output[1]
+      }
+      output = spaceParser(input)
+      if (output !== null) input = input.slice(1)
+    }
+    return [args, input.slice(1)]
+  }
+  return null
+}
+
+const lambdaParser = input => {
+  let output = allParsers(openBracket, parseLambda, spaceParser, argumentsParser, spaceParser, bodyParser, closeBracket)(input)
+  if (output !== null) {
+    let [[, , , args, , body], rest] = output
+    let obj = {
+      type: 'lambda',
+      args: args,
+      body: body,
+      env: {}
+    }
+    return [obj, rest]
+  }
+  return null
+}
+
 const evaluate = tempResult => {
   let result = []
   while (true) {
@@ -140,11 +191,20 @@ const storeIden = (id, val) => {
 }
 
 const defineParser = (input) => {
-  let output = allParsers(openBracket, parseDefine, spaceParser, identifierParser, spaceParser, expressionParser, closeBracket)(input)
+  let output = allParsers(openBracket, parseDefine, spaceParser, identifierParser, spaceParser)(input)
   if (output === null) return null
-  let [[, , , id, , val], rest] = output
+  let val = ''
+  let [[, , , id], rest] = output
+  input = rest
+  output = lambdaParser(input)
+  if (output === null) {
+    output = expressionParser(input)
+  }
+  [val, rest] = output
   storeIden(id, val)
   input = rest
+  output = closeBracket(input)
+  input = output[1]
   output = spaceParser(input)
   if (output !== null) input = output[1]
   return input
