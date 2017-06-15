@@ -11,7 +11,7 @@ const lessThan = list => list[0] < list[1]
 const gtEqTo = list => list[0] >= list[1]
 const ltEqTo = list => list[0] <= list[1]
 const eqTo = list => list[0] === list[1]
-// const ifFun = (a, b, c) => a ? b : c
+const ifFun = (a, b, c) => a ? b : c
 const maxFun = list => Math.max(...list)
 const minFun = list => Math.min(...list)
 const notFun = list => !list[0]
@@ -40,6 +40,7 @@ const cdrParser = input => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : 
 const parseDefine = input => input.startsWith('define') ? ['define', input.slice(6)] : null
 const parseLambda = input => input.startsWith('lambda') ? ['lambda', input.slice(6)] : null
 const parsePrint = input => input.startsWith('print') ? ['print', input.slice(5)] : null
+const parseIf = input => input.startsWith('if') ? ['if', input.slice(2)] : null
 
 const openBracket = input => input.startsWith('(') ? ['(', input.slice(1)] : null
 
@@ -242,6 +243,17 @@ const storeIden = (id, val) => {
   else throw new Error(`${id} is already defined`)
 }
 
+const ifParser = input => {
+  let output = allParsers(openBracket, parseIf, spaceParser, expressionParser, spaceParser, expressionParser, spaceParser, expressionParser, closeBracket)(input)
+  if (output === null) return null
+  let [[, , , test, , conseq, , alt], rest] = output
+  console.log(ifFun(test, conseq, alt))
+  input = rest
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  return input
+}
+
 const defineParser = (input) => {
   let output = allParsers(openBracket, parseDefine, spaceParser, identifierParser, spaceParser)(input)
   if (output === null) return null
@@ -276,7 +288,7 @@ const printParser = input => {
   return null
 }
 
-const statementParser = (input) => parserFactory(defineParser, printParser)(input)
+const statementParser = (input) => parserFactory(defineParser, printParser, ifParser)(input)
 
 const programParser = (code) => {
   while (code !== '' && code !== null) {
