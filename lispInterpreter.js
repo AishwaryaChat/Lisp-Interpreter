@@ -38,6 +38,7 @@ const listParser = input => input.startsWith('list') ? [listFun, input.slice(4)]
 const carParser = input => input.startsWith('car') ? [carFun, input.slice(3)] : null
 const cdrParser = input => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : null
 const parseDefine = input => input.startsWith('define') ? ['define', input.slice(6)] : null
+const parseLambda = input => input.startsWith('lambda') ? ['lambda', input.slice(6)] : null
 
 const parserFactory = (...parsers) => input => {
   for (let parser of parsers) {
@@ -106,15 +107,15 @@ const operatorParser = input => {
   let output = openBracket(input)
   if (output !== null) {
     input = output[1]
+    output = parserFactory(plusParser, minusParser, multiplyParser, divideParser,
+                         gteParser, lteParser, gtParser, ltParser, etParser,
+                         maxParser, minParser, notParser, trueParser,
+                         falseParser, listParser, carParser, cdrParser)(input)
+    if (output !== null) {
+      tempResult.push(output[0])
+      input = spaceRequired(output[1])
+    }
     while (closeBracket(input) === null) {
-      output = parserFactory(plusParser, minusParser, multiplyParser, divideParser,
-                           gteParser, lteParser, gtParser, ltParser, etParser,
-                           maxParser, minParser, notParser, trueParser,
-                           falseParser, listParser, carParser, cdrParser)(input)
-      if (output !== null) {
-        tempResult.push(output[0])
-        input = spaceRequired(output[1])
-      }
       output = expressionParser(input)
       input = output[1]
       tempResult.push(output[0])
@@ -131,7 +132,7 @@ const openBracket = input => input.startsWith('(') ? ['(', input.slice(1)] : nul
 
 const closeBracket = input => input.startsWith(')') ? [')', input.slice(1)] : null
 
-const expressionParser = input => parserFactory(operatorParser, numParser, identifierParser)(input)
+const expressionParser = input => parserFactory(numParser, identifierParser, operatorParser)(input)
 
 const storeIden = (id, val) => {
   if (ENV[id] === undefined) ENV[id] = val
