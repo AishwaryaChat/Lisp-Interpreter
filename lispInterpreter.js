@@ -41,6 +41,10 @@ const parseDefine = input => input.startsWith('define') ? ['define', input.slice
 const parseLambda = input => input.startsWith('lambda') ? ['lambda', input.slice(6)] : null
 const parsePrint = input => input.startsWith('print') ? ['print', input.slice(5)] : null
 
+const openBracket = input => input.startsWith('(') ? ['(', input.slice(1)] : null
+
+const closeBracket = input => input.startsWith(')') ? [')', input.slice(1)] : null
+
 const parserFactory = (...parsers) => (input, env) => {
   for (let parser of parsers) {
     let output = parser(input, env)
@@ -121,6 +125,8 @@ const functionCallParser = input => {
   output = operatorParser(body, env)
   return [output[0], input]
 }
+
+const expressionParser = (input, env) => parserFactory(numParser, identifierParser, operatorParser, functionCallParser)(input, env)
 
 const bodyParser = input => {
   let output = openBracket(input)
@@ -230,12 +236,6 @@ const operatorParser = (input, env) => {
   }
   return null
 }
-
-const openBracket = input => input.startsWith('(') ? ['(', input.slice(1)] : null
-
-const closeBracket = input => input.startsWith(')') ? [')', input.slice(1)] : null
-
-const expressionParser = (input, env) => parserFactory(numParser, identifierParser, operatorParser, functionCallParser)(input, env)
 
 const storeIden = (id, val) => {
   if (ENV[id] === undefined) ENV[id] = val
