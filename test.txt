@@ -1,3 +1,5 @@
 (define a (+ 10 (* 4 5) 3 5 (* 3 4 (+ 6 7 9))))(define b 50)
 (define k (* 30 (+ 8 9) 6))
-(define square (lambda (x y) (* x x)))
+(define square (lambda (x) (* x x)))
+(define add20 (lambda (x y z) (+ x (+ y (+ z 20)))))
+(print 10)(print (+ 30 (* 10 2) 4))

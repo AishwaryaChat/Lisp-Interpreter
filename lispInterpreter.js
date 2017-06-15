@@ -39,6 +39,7 @@ const carParser = input => input.startsWith('car') ? [carFun, input.slice(3)] : 
 const cdrParser = input => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : null
 const parseDefine = input => input.startsWith('define') ? ['define', input.slice(6)] : null
 const parseLambda = input => input.startsWith('lambda') ? ['lambda', input.slice(6)] : null
+const parsePrint = input => input.startsWith('print') ? ['print', input.slice(5)] : null
 
 const parserFactory = (...parsers) => input => {
   for (let parser of parsers) {
@@ -165,6 +166,8 @@ const operatorParser = input => {
     if (output !== null) {
       tempResult.push(output[0])
       input = spaceRequired(output[1])
+    } else {
+      return null
     }
     while (closeBracket(input) === null) {
       output = expressionParser(input)
@@ -210,7 +213,19 @@ const defineParser = (input) => {
   return input
 }
 
-const statementParser = (input) => parserFactory(defineParser)(input)
+const printParser = input => {
+  let output = allParsers(openBracket, parsePrint, spaceParser, expressionParser, closeBracket)(input)
+  if (output !== null) {
+    let [[, , , val], rest] = output
+    console.log(val)
+    input = rest
+  }
+  output = spaceParser(input)
+  if (output !== null) input = output[1]
+  return input
+}
+
+const statementParser = (input) => parserFactory(defineParser, printParser)(input)
 
 const programParser = (code) => {
   while (code !== '') {
