@@ -7,4 +7,5 @@
 (print k)
 (print (square 20))
 (print (square a))
+(print (add20 20 a b))
 (print (add20 1 (square 10) 3))
