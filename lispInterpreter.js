@@ -225,6 +225,7 @@ const printParser = input => {
   let output = allParsers(openBracket, parsePrint, spaceParser, expressionParser, closeBracket)(input)
   if (output !== null) {
     let [[, , , val], rest] = output
+    val = checkType(val)
     console.log(val)
     input = rest
   }
