@@ -41,9 +41,9 @@ const parseDefine = input => input.startsWith('define') ? ['define', input.slice
 const parseLambda = input => input.startsWith('lambda') ? ['lambda', input.slice(6)] : null
 const parsePrint = input => input.startsWith('print') ? ['print', input.slice(5)] : null
 
-const parserFactory = (...parsers) => input => {
+const parserFactory = (...parsers) => (input, env) => {
   for (let parser of parsers) {
-    let output = parser(input)
+    let output = parser(input, env)
     if (output !== null) return output
   }
   return null
@@ -82,6 +82,44 @@ const identifierParser = (input) => {
   if (match === null) return null
   let idStr = match[0]
   return [idStr, input.slice(idStr.length)]
+}
+
+const assignArgs = (fun, args) => {
+  let params = ENV[fun].args
+  let env = ENV[fun].env
+  let i = 0
+  while (i <= params.length - 1) {
+    env[params[i]] = args[i]
+    i++
+  }
+}
+
+const findArugments = input => {
+  let args = []
+  while (closeBracket(input) === null) {
+    let output = expressionParser(input)
+    if (output !== null) {
+      input = output[1]
+      output = checkType(output[0])
+      args.push(output)
+    }
+    output = spaceParser(input)
+    if (output !== null) input = input.slice(1)
+  }
+  return [args, input]
+}
+
+const functionCallParser = input => {
+  let output = allParsers(openBracket, identifierParser, spaceParser, findArugments, closeBracket)(input)
+  if (output === null) return null
+  let [[, fun, , args], rest] = output
+  input = rest
+  if (ENV[fun] === undefined) throw new Error(`${fun} is undefined`)
+  assignArgs(fun, args)
+  let body = ENV[fun].body
+  let env = ENV[fun].env
+  output = operatorParser(body, env)
+  return [output[0], input]
 }
 
 const bodyParser = input => {
@@ -154,14 +192,17 @@ const evaluate = tempResult => {
   return tempResult[0]
 }
 
-const checkType = input => {
+const checkType = (input, env) => {
   if (typeof input === 'string') {
+    if (env !== undefined) {
+      if (env[input] !== undefined) input = env[input]
+    }
     if (ENV[input] !== undefined) input = ENV[input]
   }
   return input
 }
 
-const operatorParser = input => {
+const operatorParser = (input, env) => {
   let tempResult = []
   let output = openBracket(input)
   if (output !== null) {
@@ -177,9 +218,9 @@ const operatorParser = input => {
       return null
     }
     while (closeBracket(input) === null) {
-      output = expressionParser(input)
+      output = expressionParser(input, env)
       input = output[1]
-      output = checkType(output[0])
+      output = checkType(output[0], env)
       tempResult.push(output)
       output = spaceParser(input)
       if (output !== null) input = input.slice(1)
@@ -194,7 +235,7 @@ const openBracket = input => input.startsWith('(') ? ['(', input.slice(1)] : nul
 
 const closeBracket = input => input.startsWith(')') ? [')', input.slice(1)] : null
 
-const expressionParser = input => parserFactory(numParser, identifierParser, operatorParser)(input)
+const expressionParser = (input, env) => parserFactory(numParser, identifierParser, operatorParser, functionCallParser)(input, env)
 
 const storeIden = (id, val) => {
   if (ENV[id] === undefined) ENV[id] = val
@@ -228,16 +269,17 @@ const printParser = input => {
     val = checkType(val)
     console.log(val)
     input = rest
+    output = spaceParser(input)
+    if (output !== null) input = output[1]
+    return input
   }
-  output = spaceParser(input)
-  if (output !== null) input = output[1]
-  return input
+  return null
 }
 
 const statementParser = (input) => parserFactory(defineParser, printParser)(input)
 
 const programParser = (code) => {
-  while (code !== '') {
+  while (code !== '' && code !== null) {
     let output = ''
     output = spaceParser(code)
     if (output !== null) {
