@@ -154,6 +154,13 @@ const evaluate = tempResult => {
   return tempResult[0]
 }
 
+const checkType = input => {
+  if (typeof input === 'string') {
+    if (ENV[input] !== undefined) input = ENV[input]
+  }
+  return input
+}
+
 const operatorParser = input => {
   let tempResult = []
   let output = openBracket(input)
@@ -172,7 +179,8 @@ const operatorParser = input => {
     while (closeBracket(input) === null) {
       output = expressionParser(input)
       input = output[1]
-      tempResult.push(output[0])
+      output = checkType(output[0])
+      tempResult.push(output)
       output = spaceParser(input)
       if (output !== null) input = input.slice(1)
     }
@@ -190,7 +198,7 @@ const expressionParser = input => parserFactory(numParser, identifierParser, ope
 
 const storeIden = (id, val) => {
   if (ENV[id] === undefined) ENV[id] = val
-  else throw new Error(`${val} is already defined`)
+  else throw new Error(`${id} is already defined`)
 }
 
 const defineParser = (input) => {
