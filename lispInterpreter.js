@@ -238,6 +238,18 @@ const checkType = (input, env) => {
   return input
 }
 
+const parseExpression = (input, tempResult, env) => {
+  while (closeBracket(input) === null) {
+    let output = expressionParser(input, env)
+    input = output[1]
+    output = checkType(output[0], env)
+    tempResult.push(output)
+    output = spaceParser(input)
+    if (output !== null) input = input.slice(1)
+  }
+  return [tempResult, input]
+}
+
 const operatorParser = (input, env) => {
   let tempResult = []
   let output = openBracket(input)
@@ -253,14 +265,7 @@ const operatorParser = (input, env) => {
     } else {
       return null
     }
-    while (closeBracket(input) === null) {
-      output = expressionParser(input, env)
-      input = output[1]
-      output = checkType(output[0], env)
-      tempResult.push(output)
-      output = spaceParser(input)
-      if (output !== null) input = input.slice(1)
-    }
+    [tempResult, input] = parseExpression(input, tempResult, env)
     tempResult = evaluate(tempResult)
     return [tempResult, input.slice(1)]
   }
