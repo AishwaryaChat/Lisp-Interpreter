@@ -16,3 +16,6 @@
 (define t (+ 3 4 (+ 4 5 (* 3 5))))
 (print ((lambda (x) (* x x)) 10))
 (print ((lambda (x y) (+ 3 x y)) 10 20))
+(define l (list 3 a 1))
+(print (car l))
+(print (cdr l))

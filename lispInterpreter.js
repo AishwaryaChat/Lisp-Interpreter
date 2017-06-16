@@ -16,8 +16,8 @@ const maxFun = list => Math.max(...list)
 const minFun = list => Math.min(...list)
 const notFun = list => !list[0]
 const listFun = list => list
-const carFun = list => list[list.length - 1]
-const cdrFun = list => list[0]
+const carFun = list => list.reverse()[0]
+const cdrFun = list => list.reverse().slice(1)
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -291,7 +291,6 @@ const defineParser = (input) => {
 
 const printParser = input => {
   let output = allParsers(openBracket, parsePrint, spaceParser, expressionParser, closeBracket)(input)
-  // console.log('inside printParser', output)
   if (output !== null) {
     let [[, , , val], rest] = output
     val = checkType(val)
