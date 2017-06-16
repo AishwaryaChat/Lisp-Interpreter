@@ -91,6 +91,24 @@ const numParser = input => {
   return [parseInt(numStr), input.slice(numStr.length)]
 }
 
+function stringParser (input) {
+  let i = 1
+  if (input.startsWith('"')) {
+    let s = ''
+    while (input[i] !== '"') {
+      if (input[i] === '\\') {
+        s = s + input.substr(i, 2)
+        i += 2
+      } else {
+        s = s + input[i]
+        i++
+      }
+    }
+    return [s, input.slice(i + 1)]
+  }
+  return null
+}
+
 const identifierParser = (input) => {
   let match = input.match(/^[a-zA-Z]+[0-9]*[a-zA-Z]*/)
   if (match === null) return null
@@ -161,7 +179,7 @@ const functionCallParser = input => {
   return [output[0], input]
 }
 
-const expressionParser = (input, env) => parserFactory(numParser, identifierParser,
+const expressionParser = (input, env) => parserFactory(numParser, stringParser, identifierParser,
                                                        operatorParser,
                                                        functionCallParser)(input, env)
 

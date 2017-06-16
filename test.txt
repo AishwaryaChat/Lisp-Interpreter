@@ -21,3 +21,4 @@
 (print (cdr l))
 (print (cons 55 l))
 (print (isList l))
+(define i "aish")
