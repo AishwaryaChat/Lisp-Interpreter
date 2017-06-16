@@ -20,3 +20,4 @@
 (print (car l))
 (print (cdr l))
 (print (cons 55 l))
+(print (isList l))

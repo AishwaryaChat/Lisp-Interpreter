@@ -16,14 +16,15 @@ const maxFun = list => Math.max(...list)
 const minFun = list => Math.min(...list)
 const notFun = list => !list[0]
 const listFun = list => { return {type: 'list', list} }
-const carFun = list => [...list[0]][0]
-const cdrFun = list => [...list[0]].slice(1)
-const consFun = (list) => {
+const carFun = list => [...list[0].list][0]
+const cdrFun = list => [...list[0].list].slice(1)
+const consFun = list => {
   let ele = list[0]
-  list = list[1]
+  list = list[1].list
   list.unshift(ele)
   return list
 }
+const isListFun = list => list[0].type === 'list'
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -44,6 +45,7 @@ const listParser = input => input.startsWith('list') ? [listFun, input.slice(4)]
 const carParser = input => input.startsWith('car') ? [carFun, input.slice(3)] : null
 const cdrParser = input => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : null
 const consParser = input => input.startsWith('cons') ? [consFun, input.slice(4)] : null
+const isListParser = input => input.startsWith('isList') ? [isListFun, input.slice(6)] : null
 const parseDefine = input => input.startsWith('define') ? ['define', input.slice(6)] : null
 const parseLambda = input => input.startsWith('lambda') ? ['lambda', input.slice(6)] : null
 const parsePrint = input => input.startsWith('print') ? ['print', input.slice(5)] : null
@@ -233,7 +235,7 @@ const evaluate = tempResult => {
       tempResult.push(res)
       if (tempResult.length === 1) break
     } else if (typeof val === 'object') {
-      result.push(val.list)
+      result.push(val)
     } else {
       result.push(val)
     }
@@ -272,7 +274,7 @@ const operatorParser = (input, env) => {
     output = parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                          gteParser, lteParser, gtParser, ltParser, etParser,
                          maxParser, minParser, notParser, trueParser, consParser,
-                         falseParser, listParser, carParser, cdrParser)(input)
+                         falseParser, listParser, carParser, cdrParser, isListParser)(input)
     if (output !== null) {
       tempResult.push(output[0])
       input = spaceRequired(output[1])
