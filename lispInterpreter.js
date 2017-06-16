@@ -140,19 +140,14 @@ const findArugments = input => {
 }
 
 const functionCallParser = input => {
-  let funcObj = ''
-  let args = []
-  let rest = ''
   let output = openBracket(input)
   input = output[1]
   output = findType(input)
-  if (output === null) return null;
-  [funcObj, args, rest] = output
+  if (output === null) return null
+  let [funcObj, args, rest] = output
   input = rest
   assignArgs(funcObj, args)
-  let body = funcObj.body
-  let env = funcObj.env
-  output = operatorParser(body, env)
+  output = operatorParser(funcObj.body, funcObj.env)
   return [output[0], input]
 }
 
@@ -175,20 +170,26 @@ const bodyParser = input => {
   return [body, input]
 }
 
+const parseArguments = input => {
+  let args = []
+  while (closeBracket(input) === null) {
+    let output = identifierParser(input)
+    if (output !== null) {
+      args.push(output[0])
+      input = output[1]
+    }
+    output = spaceParser(input)
+    if (output !== null) input = input.slice(1)
+  }
+  return [args, input]
+}
+
 const argumentsParser = input => {
   let output = openBracket(input)
   if (output !== null) {
     let args = []
-    input = output[1]
-    while (closeBracket(input) === null) {
-      output = identifierParser(input)
-      if (output !== null) {
-        args.push(output[0])
-        input = output[1]
-      }
-      output = spaceParser(input)
-      if (output !== null) input = input.slice(1)
-    }
+    input = output[1];
+    [args, input] = parseArguments(input)
     return [args, input.slice(1)]
   }
   return null
