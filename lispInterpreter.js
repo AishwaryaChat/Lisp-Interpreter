@@ -89,9 +89,9 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
-const assignArgs = (fun, args) => {
-  let params = ENV[fun].args
-  let env = ENV[fun].env
+const assignArgs = (funcObj, args) => {
+  let params = funcObj.args
+  let env = funcObj.env
   let i = 0
   while (i <= params.length - 1) {
     env[params[i]] = args[i]
@@ -115,14 +115,29 @@ const findArugments = input => {
 }
 
 const functionCallParser = input => {
-  let output = allParsers(openBracket, identifierParser, spaceParser, findArugments, closeBracket)(input)
+  let funcObj = ''
+  let args = []
+  let rest = ''
+  let output = openBracket(input)
+  input = output[1]
+  output = identifierParser(input)
+  if (output !== null) {
+    funcObj = output[0]
+    if (ENV[funcObj] === undefined) throw new Error(`${funcObj} is undefined`)
+    funcObj = ENV[funcObj]
+    input = output[1]
+    output = allParsers(spaceParser, findArugments, closeBracket)(input);
+    [[, args], rest] = output
+    input = rest
+  } else {
+    output = allParsers(lambdaParser, spaceParser, findArugments, closeBracket)(input);
+    [[funcObj, , args], rest] = output
+    input = rest
+  }
   if (output === null) return null
-  let [[, fun, , args], rest] = output
-  input = rest
-  if (ENV[fun] === undefined) throw new Error(`${fun} is undefined`)
-  assignArgs(fun, args)
-  let body = ENV[fun].body
-  let env = ENV[fun].env
+  assignArgs(funcObj, args)
+  let body = funcObj.body
+  let env = funcObj.env
   output = operatorParser(body, env)
   return [output[0], input]
 }
@@ -276,6 +291,7 @@ const defineParser = (input) => {
 
 const printParser = input => {
   let output = allParsers(openBracket, parsePrint, spaceParser, expressionParser, closeBracket)(input)
+  // console.log('inside printParser', output)
   if (output !== null) {
     let [[, , , val], rest] = output
     val = checkType(val)
