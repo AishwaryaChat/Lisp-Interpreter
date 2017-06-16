@@ -89,6 +89,31 @@ const identifierParser = (input) => {
   return [idStr, input.slice(idStr.length)]
 }
 
+const definedFun = input => {
+  let funcObj = input[0]
+  input = input[1]
+  if (ENV[funcObj] === undefined) throw new Error(`${funcObj} is undefined`)
+  funcObj = ENV[funcObj]
+  let output = allParsers(spaceParser, findArugments, closeBracket)(input)
+  let [[, args], rest] = output
+  input = rest
+  return [funcObj, args, rest]
+}
+
+const iife = input => {
+  let output = allParsers(lambdaParser, spaceParser, findArugments, closeBracket)(input)
+  let [[funcObj, , args], rest] = output
+  input = rest
+  return [funcObj, args, rest]
+}
+
+const findType = input => {
+  let output = identifierParser(input)
+  if (output !== null) output = definedFun(output)
+  else output = iife(input)
+  return output
+}
+
 const assignArgs = (funcObj, args) => {
   let params = funcObj.args
   let env = funcObj.env
@@ -120,21 +145,10 @@ const functionCallParser = input => {
   let rest = ''
   let output = openBracket(input)
   input = output[1]
-  output = identifierParser(input)
-  if (output !== null) {
-    funcObj = output[0]
-    if (ENV[funcObj] === undefined) throw new Error(`${funcObj} is undefined`)
-    funcObj = ENV[funcObj]
-    input = output[1]
-    output = allParsers(spaceParser, findArugments, closeBracket)(input);
-    [[, args], rest] = output
-    input = rest
-  } else {
-    output = allParsers(lambdaParser, spaceParser, findArugments, closeBracket)(input);
-    [[funcObj, , args], rest] = output
-    input = rest
-  }
-  if (output === null) return null
+  output = findType(input)
+  if (output === null) return null;
+  [funcObj, args, rest] = output
+  input = rest
   assignArgs(funcObj, args)
   let body = funcObj.body
   let env = funcObj.env
