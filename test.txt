@@ -19,3 +19,4 @@
 (define l (list 3 a 1))
 (print (car l))
 (print (cdr l))
+(print (cons 55 l))

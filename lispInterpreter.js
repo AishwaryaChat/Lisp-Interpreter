@@ -16,8 +16,14 @@ const maxFun = list => Math.max(...list)
 const minFun = list => Math.min(...list)
 const notFun = list => !list[0]
 const listFun = list => list
-const carFun = list => list.reverse()[0]
-const cdrFun = list => list.reverse().slice(1)
+const carFun = list => [...list[0]][0]
+const cdrFun = list => [...list[0]].slice(1)
+const consFun = (list) => {
+  let ele = list[0]
+  list = list[1]
+  list.unshift(ele)
+  return list
+}
 
 // Tokenizers
 const plusParser = input => input.startsWith('+') ? [plus, input.slice(1)] : null
@@ -37,6 +43,7 @@ const notParser = input => input.startsWith('not') ? [notFun, input.slice(3)] : 
 const listParser = input => input.startsWith('list') ? [listFun, input.slice(4)] : null
 const carParser = input => input.startsWith('car') ? [carFun, input.slice(3)] : null
 const cdrParser = input => input.startsWith('cdr') ? [cdrFun, input.slice(3)] : null
+const consParser = input => input.startsWith('cons') ? [consFun, input.slice(4)] : null
 const parseDefine = input => input.startsWith('define') ? ['define', input.slice(6)] : null
 const parseLambda = input => input.startsWith('lambda') ? ['lambda', input.slice(6)] : null
 const parsePrint = input => input.startsWith('print') ? ['print', input.slice(5)] : null
@@ -101,7 +108,8 @@ const definedFun = input => {
 }
 
 const iife = input => {
-  let output = allParsers(lambdaParser, spaceParser, findArugments, closeBracket)(input)
+  let output = allParsers(lambdaParser, spaceParser, findArugments,
+                          closeBracket)(input)
   let [[funcObj, , args], rest] = output
   input = rest
   return [funcObj, args, rest]
@@ -151,7 +159,9 @@ const functionCallParser = input => {
   return [output[0], input]
 }
 
-const expressionParser = (input, env) => parserFactory(numParser, identifierParser, operatorParser, functionCallParser)(input, env)
+const expressionParser = (input, env) => parserFactory(numParser, identifierParser,
+                                                       operatorParser,
+                                                       functionCallParser)(input, env)
 
 const bodyParser = input => {
   let output = openBracket(input)
@@ -196,7 +206,8 @@ const argumentsParser = input => {
 }
 
 const lambdaParser = input => {
-  let output = allParsers(openBracket, parseLambda, spaceParser, argumentsParser, spaceParser, bodyParser, closeBracket)(input)
+  let output = allParsers(openBracket, parseLambda, spaceParser, argumentsParser,
+                          spaceParser, bodyParser, closeBracket)(input)
   if (output !== null) {
     let [[, , , args, , body], rest] = output
     let obj = {
@@ -215,13 +226,14 @@ const evaluate = tempResult => {
   while (true) {
     if (tempResult.length === 1 && typeof tempResult[0] !== 'function') break
     let val = tempResult.pop()
+
     if (typeof val === 'function') {
       let res = val(result.reverse())
       result = []
       tempResult.push(res)
       if (tempResult.length === 1) break
     } else if (typeof val === 'object') {
-      result.push(...val)
+      result.push(val)
     } else {
       result.push(val)
     }
@@ -233,8 +245,9 @@ const checkType = (input, env) => {
   if (typeof input === 'string') {
     if (env !== undefined) {
       if (env[input] !== undefined) input = env[input]
-    }
-    if (ENV[input] !== undefined) input = ENV[input]
+    } else if (ENV[input] !== undefined) {
+      input = ENV[input]
+    } else if (ENV[input] === undefined) throw new Error(`${input} is undefined`)
   }
   return input
 }
@@ -258,7 +271,7 @@ const operatorParser = (input, env) => {
     input = output[1]
     output = parserFactory(plusParser, minusParser, multiplyParser, divideParser,
                          gteParser, lteParser, gtParser, ltParser, etParser,
-                         maxParser, minParser, notParser, trueParser,
+                         maxParser, minParser, notParser, trueParser, consParser,
                          falseParser, listParser, carParser, cdrParser)(input)
     if (output !== null) {
       tempResult.push(output[0])
@@ -279,7 +292,9 @@ const storeIden = (id, val) => {
 }
 
 const ifParser = input => {
-  let output = allParsers(openBracket, parseIf, spaceParser, expressionParser, spaceParser, expressionParser, spaceParser, expressionParser, closeBracket)(input)
+  let output = allParsers(openBracket, parseIf, spaceParser, expressionParser,
+                          spaceParser, expressionParser, spaceParser,
+                          expressionParser, closeBracket)(input)
   if (output === null) return null
   let [[, , , test, , conseq, , alt], rest] = output
   console.log(ifFun(test, conseq, alt))
@@ -290,19 +305,17 @@ const ifParser = input => {
 }
 
 const defineParser = (input) => {
-  let output = allParsers(openBracket, parseDefine, spaceParser, identifierParser, spaceParser)(input)
+  let output = allParsers(openBracket, parseDefine, spaceParser,
+                          identifierParser, spaceParser)(input)
   if (output === null) return null
   let val = ''
   let [[, , , id], rest] = output
   input = rest
   output = lambdaParser(input)
-  if (output === null) {
-    output = expressionParser(input)
-  }
+  if (output === null) output = expressionParser(input);
   [val, rest] = output
   storeIden(id, val)
-  input = rest
-  output = closeBracket(input)
+  output = closeBracket(rest)
   input = output[1]
   output = spaceParser(input)
   if (output !== null) input = output[1]
@@ -310,7 +323,8 @@ const defineParser = (input) => {
 }
 
 const printParser = input => {
-  let output = allParsers(openBracket, parsePrint, spaceParser, expressionParser, closeBracket)(input)
+  let output = allParsers(openBracket, parsePrint, spaceParser,
+                          expressionParser, closeBracket)(input)
   if (output !== null) {
     let [[, , , val], rest] = output
     val = checkType(val)
@@ -323,7 +337,8 @@ const printParser = input => {
   return null
 }
 
-const statementParser = (input) => parserFactory(defineParser, printParser, ifParser)(input)
+const statementParser = (input) => parserFactory(defineParser, printParser,
+                                                 ifParser)(input)
 
 const programParser = (code) => {
   while (code !== '' && code !== null) {
