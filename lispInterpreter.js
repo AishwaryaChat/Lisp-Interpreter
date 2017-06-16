@@ -15,7 +15,7 @@ const ifFun = (a, b, c) => a ? b : c
 const maxFun = list => Math.max(...list)
 const minFun = list => Math.min(...list)
 const notFun = list => !list[0]
-const listFun = list => list
+const listFun = list => { return {type: 'list', list} }
 const carFun = list => [...list[0]][0]
 const cdrFun = list => [...list[0]].slice(1)
 const consFun = (list) => {
@@ -233,7 +233,7 @@ const evaluate = tempResult => {
       tempResult.push(res)
       if (tempResult.length === 1) break
     } else if (typeof val === 'object') {
-      result.push(val)
+      result.push(val.list)
     } else {
       result.push(val)
     }
