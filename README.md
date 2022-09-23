@@ -5,6 +5,12 @@ This respository has created a program which takes in LISP instructions as input
 ## Setup
 1. Clone the [respository](https://github.com/AishwaryaChat/Lisp-Interpreter.git).
 
-2. To run the interpreter on your input please run the below command:
+2. To run the interpreter on your input please run the below commands:
+    
+    a. npm install
 
-    npm run start -- --file={file_path}
+    b. npm run start -- --file={file_path}
+
+## Run Tests
+
+npm test
