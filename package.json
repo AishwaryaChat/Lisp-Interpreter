@@ -1,0 +1,23 @@
+{
+  "name": "lisp-interpreter",
+  "version": "1.0.0",
+  "description": "Lisp Interpreter in javascript",
+  "main": "start.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node start"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AishwaryaChat/Lisp-Interpreter.git"
+  },
+  "author": "Aishwarya Chaturvedi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AishwaryaChat/Lisp-Interpreter/issues"
+  },
+  "homepage": "https://github.com/AishwaryaChat/Lisp-Interpreter#readme",
+  "dependencies": {
+    "minimist": "^1.2.6"
+  }
+}
